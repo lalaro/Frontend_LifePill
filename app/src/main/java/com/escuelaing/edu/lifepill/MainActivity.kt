@@ -41,7 +41,6 @@ fun AppNavigation() {
         composable("onboarding") {
             OnBoardingScreen(
                 onSkip = {
-                    // Correct implementation of navigate with popUpTo and inclusive
                     navController.navigate("login") {
                         popUpTo("onboarding") {
                             inclusive = true
@@ -49,13 +48,10 @@ fun AppNavigation() {
                     }
                 },
                 onNext = {
-                    // The onNext lambda in OnBoardingScreen handles internal page changes
-                    // within the same composable, so no navigation is needed here.
                 }
             )
         }
         composable("login") {
-            // Your LoginScreen composable will go here
         }
     }
 }
