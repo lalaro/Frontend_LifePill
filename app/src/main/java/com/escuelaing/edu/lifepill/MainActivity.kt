@@ -12,7 +12,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.escuelaing.edu.lifepill.ui.theme.LifePillTheme
 import com.escuelaing.edu.lifepill.ui.screens.OnBoardingScreen
-
+import com.escuelaing.edu.lifepill.ui.screens.loginScreen.LoginScreens
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,6 +47,12 @@ fun AppNavigation() {
             )
         }
         composable("login") {
+            LoginScreens(
+                onForgotPasswordClick = {
+                    navController.navigate("forgot_password")
+                }
+            )
+
         }
     }
 }
