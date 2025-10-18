@@ -290,7 +290,12 @@ fun LoginContent(
 
                 if (emailValidation.isValid && passwordValidation.isValid) {
                     isLoading = true
-                    onLoginSuccess(selectedRole)
+                    val userType = if (emailField.value == "admin.gmail.com" && passwordField.value == "admin123") {
+                        "admin"
+                    } else {
+                        emailField.value
+                    }
+                    onLoginSuccess(userType)
                 }
             },
             enabled = !isLoading && emailField.value.isNotEmpty() && passwordField.value.isNotEmpty(),
@@ -298,7 +303,6 @@ fun LoginContent(
                 .fillMaxWidth()
                 .height(50.dp)
         )
-
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(

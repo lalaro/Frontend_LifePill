@@ -17,6 +17,8 @@ import com.escuelaing.edu.lifepill.ui.screens.loginScreen.forgotPasswordScreen.F
 import com.escuelaing.edu.lifepill.ui.screens.loginScreen.forgotPasswordScreen.VerificationScreen
 import com.escuelaing.edu.lifepill.ui.screens.loginScreen.forgotPasswordScreen.ResetPasswordScreen
 import com.escuelaing.edu.lifepill.ui.screens.loginScreen.forgotPasswordScreen.PasswordSuccessScreen
+import com.escuelaing.edu.lifepill.ui.screens.homeScreen.AdminHomeScreen
+import com.escuelaing.edu.lifepill.ui.screens.homeScreen.UserHomeScreen
 
 
 class MainActivity : ComponentActivity() {
@@ -52,24 +54,55 @@ fun AppNavigation() {
                 }
             )
         }
+
         composable("login") {
             LoginScreens(
                 onForgotPasswordClick = {
                     navController.navigate("forgot_password")
+                },
+                onLoginSuccess = { email ->
+                    if (email == "admin@gmail.com") {
+                        navController.navigate("admin_home") {
+                            popUpTo("login") { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate("user_home") {
+                            popUpTo("login") { inclusive = true }
+                        }
+                    }
                 }
             )
+        }
 
+        composable("admin_home") {
+            AdminHomeScreen(
+                onLogout = {
+                    navController.navigate("login") {
+                        popUpTo("admin_home") { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable("user_home") {
+            UserHomeScreen(
+                onLogout = {
+                    navController.navigate("login") {
+                        popUpTo("user_home") { inclusive = true }
+                    }
+                }
+            )
         }
 
         composable("forgot_password") {
             ForgotPasswordScreen(
                 onBack = { navController.popBackStack() },
                 onVerify = { email ->
-                    // 👉 Aquí navegamos a VerificationScreen
                     navController.navigate("verification/$email")
                 }
             )
         }
+
         composable("verification/{email}") { backStackEntry ->
             val email = backStackEntry.arguments?.getString("email") ?: ""
             VerificationScreen(
@@ -81,7 +114,6 @@ fun AppNavigation() {
             )
         }
 
-
         composable("reset_password") {
             ResetPasswordScreen(
                 onBack = { navController.popBackStack() },
@@ -92,6 +124,7 @@ fun AppNavigation() {
                 }
             )
         }
+
         composable("password_success") {
             PasswordSuccessScreen(
                 onBack = { navController.popBackStack() },
@@ -103,7 +136,4 @@ fun AppNavigation() {
             )
         }
     }
-
-
-
 }
