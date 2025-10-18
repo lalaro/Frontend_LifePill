@@ -17,7 +17,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -27,14 +26,18 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.escuelaing.edu.lifepill.R
 import com.escuelaing.edu.lifepill.ui.theme.LifePillTheme
 import java.util.*
+import androidx.compose.foundation.Image
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.painterResource
 
 object LifePillColors {
     val Primary = Color(0xFF007bff)
     val Background = Color(0xFF1E1E1E)
     val Surface = Color(0xFF16213E)
-    val OnSurface = Color.White
+    val OnSurface = Color(0xFFB8BCC8)
     val OnSurfaceVariant = Color(0xFFB8BCC8)
     val Error = Color(0xFFFF6B6B)
 }
@@ -53,7 +56,7 @@ data class FormField(
 @Composable
 fun LoginScreens(
     onForgotPasswordClick: () -> Unit = {},
-    onLoginSuccess: () -> Unit = {},
+    onLoginSuccess: (String) -> Unit = {},
     onNavigateToRegister: () -> Unit = {}
 ) {
     var isLoginScreen by remember { mutableStateOf(true) }
@@ -81,7 +84,9 @@ fun LoginScreens(
             if (isLoginScreen) {
                 LoginContent(
                     onForgotPasswordClick = onForgotPasswordClick,
-                    onLoginSuccess = onLoginSuccess,
+                    onLoginSuccess = { role ->
+                        onLoginSuccess(role)
+                    },
                     onNavigateToRegister = onNavigateToRegister
                 )
             } else {
@@ -161,47 +166,110 @@ private fun TabButton(
 @Composable
 fun LoginContent(
     onForgotPasswordClick: () -> Unit = {},
-    onLoginSuccess: () -> Unit = {},
-    onNavigateToRegister: () -> Unit = {}
+    onLoginSuccess: (String) -> Unit = {},
+    onNavigateToRegister: () -> Unit = {},
+    onGoogleLoginClick: () -> Unit = {}
 ) {
     var emailField by remember { mutableStateOf(FormField()) }
     var passwordField by remember { mutableStateOf(FormField()) }
     var isLoading by remember { mutableStateOf(false) }
+    var selectedRole by remember { mutableStateOf("usuario") }
+    var passwordVisible by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        LifePillTextField(
-            field = emailField,
+        OutlinedTextField(
+            value = emailField.value,
             onValueChange = { newValue ->
-                emailField = emailField.copy(
-                    value = newValue,
-                    error = "",
-                    isValid = true
+                val validation = validateEmail(newValue)
+                emailField = emailField.copy(value = newValue, error = validation.errorMessage, isValid = validation.isValid)
+            },
+            label = { Text("Correo Electrónico", color = LifePillColors.OnSurfaceVariant) },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Email,
+                    contentDescription = "Email",
+                    tint = LifePillColors.Primary
                 )
             },
-            label = "Correo Electrónico",
-            leadingIcon = Icons.Default.Email,
-            keyboardType = KeyboardType.Email
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            shape = RoundedCornerShape(12.dp),
+            isError = !emailField.isValid && emailField.error.isNotEmpty(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = LifePillColors.Surface,
+                unfocusedContainerColor = LifePillColors.Surface,
+                focusedBorderColor = LifePillColors.Primary,
+                unfocusedBorderColor = LifePillColors.OnSurfaceVariant,
+                focusedTextColor = LifePillColors.OnSurface,
+                unfocusedTextColor = LifePillColors.OnSurface,
+                cursorColor = LifePillColors.Primary,
+                focusedLabelColor = LifePillColors.Primary,
+                unfocusedLabelColor = LifePillColors.OnSurfaceVariant,
+                errorTextColor = LifePillColors.OnSurface
+            )
         )
+
+        if (!emailField.isValid && emailField.error.isNotEmpty()) {
+            Text(
+                text = emailField.error,
+                color = LifePillColors.Error,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+            )
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        LifePillTextField(
-            field = passwordField,
+        OutlinedTextField(
+            value = passwordField.value,
             onValueChange = { newValue ->
-                passwordField = passwordField.copy(
-                    value = newValue,
-                    error = "",
-                    isValid = true
+                passwordField = passwordField.copy(value = newValue, error = "", isValid = true)
+            },
+            label = { Text("Contraseña", color = LifePillColors.OnSurfaceVariant) },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = "Contraseña",
+                    tint = LifePillColors.Primary
                 )
             },
-            label = "Contraseña",
-            leadingIcon = Icons.Default.Lock,
-            keyboardType = KeyboardType.Password,
-            isPassword = true
+            trailingIcon = {
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+
+                }
+            },
+            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            shape = RoundedCornerShape(12.dp),
+            isError = !passwordField.isValid && passwordField.error.isNotEmpty(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = LifePillColors.Surface,
+                unfocusedContainerColor = LifePillColors.Surface,
+                focusedBorderColor = LifePillColors.Primary,
+                unfocusedBorderColor = LifePillColors.OnSurfaceVariant,
+                focusedTextColor = LifePillColors.OnSurface,
+                unfocusedTextColor = LifePillColors.OnSurface,
+                cursorColor = LifePillColors.Primary,
+                focusedLabelColor = LifePillColors.Primary,
+                unfocusedLabelColor = LifePillColors.OnSurfaceVariant,
+                errorTextColor = LifePillColors.OnSurface
+            )
         )
+
+        if (!passwordField.isValid && passwordField.error.isNotEmpty()) {
+            Text(
+                text = passwordField.error,
+                color = LifePillColors.Error,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+            )
+        }
 
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -222,13 +290,37 @@ fun LoginContent(
 
                 if (emailValidation.isValid && passwordValidation.isValid) {
                     isLoading = true
-                    // Simular login
-                    // TODO: Implementar lógica de autenticación real
-                    onLoginSuccess()
+                    onLoginSuccess(selectedRole)
                 }
             },
-            enabled = !isLoading && emailField.value.isNotEmpty() && passwordField.value.isNotEmpty()
+            enabled = !isLoading && emailField.value.isNotEmpty() && passwordField.value.isNotEmpty(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp)
         )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = onGoogleLoginClick,
+            colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+            border = BorderStroke(1.dp, Color.LightGray),
+            modifier = Modifier
+                .fillMaxWidth(0.9f)
+                .height(50.dp)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.screen6),
+                contentDescription = "Google logo",
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Iniciar sesión con Google",
+                color = Color.Black,
+                fontWeight = FontWeight.Medium
+            )
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -241,24 +333,6 @@ fun LoginContent(
         )
 
         Spacer(modifier = Modifier.height(24.dp))
-
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "¿No tienes cuenta? ",
-                color = LifePillColors.OnSurfaceVariant,
-                fontSize = 14.sp
-            )
-            Text(
-                text = "Regístrate",
-                color = LifePillColors.Primary,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.clickable { onNavigateToRegister() }
-            )
-        }
     }
 }
 
@@ -301,7 +375,6 @@ private fun OnBoardingStyleButton(
 fun CreateAccountContent() {
     var currentStep by remember { mutableStateOf(0) }
     val scrollState = rememberScrollState()
-    val coroutineScope = rememberCoroutineScope()
     var documentType by remember { mutableStateOf("CC") }
     var documentNumber by remember { mutableStateOf(FormField()) }
     var firstName by remember { mutableStateOf(FormField()) }
@@ -317,7 +390,6 @@ fun CreateAccountContent() {
     var weight by remember { mutableStateOf("") }
     var height by remember { mutableStateOf("") }
     var selectedWorkMode by remember { mutableStateOf("") }
-
     var showDatePicker by remember { mutableStateOf(false) }
 
     Column(
@@ -347,7 +419,7 @@ fun CreateAccountContent() {
                 username = username,
                 onUsernameChange = { username = it },
                 birthDate = birthDate,
-                onBirthDateClick = { showDatePicker = true },
+                onBirthDateChange = { birthDate = it },
                 selectedGender = selectedGender,
                 onGenderChange = { selectedGender = it }
             )
@@ -380,39 +452,8 @@ fun CreateAccountContent() {
             totalSteps = 4,
             onPrevious = { if (currentStep > 0) currentStep-- },
             onNext = { if (currentStep < 3) currentStep++ },
-            onFinish = { /* TODO: Implementar registro */ }
+            onFinish = { }
         )
-    }
-
-    if (showDatePicker) {
-        val datePickerState = rememberDatePickerState()
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        datePickerState.selectedDateMillis?.let { millis ->
-                            birthDate = formatDate(millis)
-                        }
-                        showDatePicker = false
-                    }
-                ) { Text("Confirmar", color = LifePillColors.Primary) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text("Cancelar", color = LifePillColors.OnSurfaceVariant)
-                }
-            }
-        ) {
-            DatePicker(
-                state = datePickerState,
-                colors = DatePickerDefaults.colors(
-                    selectedDayContainerColor = LifePillColors.Primary,
-                    todayContentColor = LifePillColors.Primary,
-                    todayDateBorderColor = LifePillColors.Primary
-                )
-            )
-        }
     }
 }
 
@@ -447,17 +488,13 @@ private fun DocumentInfoStep(
     onDocumentNumberChange: (FormField) -> Unit
 ) {
     val documentTypes = listOf("CC", "TI", "CE", "Pasaporte")
-    var expanded by remember { mutableStateOf(false) }
 
     Column {
         SectionTitle("Información de Documento")
-
         Spacer(modifier = Modifier.height(16.dp))
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        LifePillTextField(
-            field = documentNumber,
+        OutlinedTextField(
+            value = documentNumber.value,
             onValueChange = { value ->
                 val filteredValue = when (documentType) {
                     "CC", "TI", "CE" -> value.filter { it.isDigit() }
@@ -472,9 +509,25 @@ private fun DocumentInfoStep(
                     )
                 )
             },
-            label = "Número de Documento",
-            leadingIcon = Icons.Default.Create,
-            keyboardType = if (documentType in listOf("CC", "TI", "CE")) KeyboardType.Number else KeyboardType.Text
+            label = { Text("Número de Documento", color = LifePillColors.OnSurfaceVariant) },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = "Documento",
+                    tint = LifePillColors.Primary
+                )
+            },
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = if (documentType in listOf("CC", "TI", "CE")) KeyboardType.Number else KeyboardType.Text),
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = LifePillColors.Surface,
+                unfocusedContainerColor = LifePillColors.Surface,
+                focusedBorderColor = LifePillColors.Primary,
+                unfocusedBorderColor = LifePillColors.OnSurfaceVariant,
+                focusedTextColor = LifePillColors.OnSurface,
+                unfocusedTextColor = LifePillColors.OnSurface
+            )
         )
     }
 }
@@ -488,87 +541,132 @@ private fun PersonalInfoStep(
     username: FormField,
     onUsernameChange: (FormField) -> Unit,
     birthDate: String,
-    onBirthDateClick: () -> Unit,
+    onBirthDateChange: (String) -> Unit,
     selectedGender: String,
-    onGenderChange: (String) -> Unit
+    onGenderChange: (String) -> Unit,
 ) {
     Column {
         SectionTitle("Información Personal")
-
         Spacer(modifier = Modifier.height(16.dp))
 
-        LifePillTextField(
-            field = firstName,
+        OutlinedTextField(
+            value = firstName.value,
             onValueChange = { value ->
                 val filteredValue = value.filter { it.isLetter() || it.isWhitespace() }
                 val validation = validateName(filteredValue)
-                onFirstNameChange(
-                    FormField(
-                        value = filteredValue,
-                        error = validation.errorMessage,
-                        isValid = validation.isValid
-                    )
-                )
+                onFirstNameChange(FormField(value = filteredValue, error = validation.errorMessage, isValid = validation.isValid))
             },
-            label = "Nombre",
-            leadingIcon = Icons.Default.Person
+            label = { Text("Nombre", color = LifePillColors.OnSurfaceVariant) },
+            leadingIcon = { Icon(Icons.Default.Person, "Nombre", tint = LifePillColors.Primary) },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = LifePillColors.Surface,
+                unfocusedContainerColor = LifePillColors.Surface,
+                focusedBorderColor = LifePillColors.Primary,
+                unfocusedBorderColor = LifePillColors.OnSurfaceVariant,
+                focusedTextColor = LifePillColors.OnSurface,
+                unfocusedTextColor = LifePillColors.OnSurface
+            )
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        LifePillTextField(
-            field = lastName,
+        OutlinedTextField(
+            value = lastName.value,
             onValueChange = { value ->
                 val filteredValue = value.filter { it.isLetter() || it.isWhitespace() }
                 val validation = validateName(filteredValue)
-                onLastNameChange(
-                    FormField(
-                        value = filteredValue,
-                        error = validation.errorMessage,
-                        isValid = validation.isValid
-                    )
-                )
+                onLastNameChange(FormField(value = filteredValue, error = validation.errorMessage, isValid = validation.isValid))
             },
-            label = "Apellido",
-            leadingIcon = Icons.Default.Person
+            label = { Text("Apellido", color = LifePillColors.OnSurfaceVariant) },
+            leadingIcon = { Icon(Icons.Default.Person, "Apellido", tint = LifePillColors.Primary) },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = LifePillColors.Surface,
+                unfocusedContainerColor = LifePillColors.Surface,
+                focusedBorderColor = LifePillColors.Primary,
+                unfocusedBorderColor = LifePillColors.OnSurfaceVariant,
+                focusedTextColor = LifePillColors.OnSurface,
+                unfocusedTextColor = LifePillColors.OnSurface
+            )
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        LifePillTextField(
-            field = username,
+        OutlinedTextField(
+            value = username.value,
             onValueChange = { value ->
                 val filteredValue = value.filter { it.isLetterOrDigit() || it == '_' || it == '.' }
                 val validation = validateUsername(filteredValue)
-                onUsernameChange(
-                    FormField(
-                        value = filteredValue,
-                        error = validation.errorMessage,
-                        isValid = validation.isValid
-                    )
-                )
+                onUsernameChange(FormField(value = filteredValue, error = validation.errorMessage, isValid = validation.isValid))
             },
-            label = "Nombre de Usuario",
-            leadingIcon = Icons.Default.AccountCircle
+            label = { Text("Nombre de Usuario", color = LifePillColors.OnSurfaceVariant) },
+            leadingIcon = { Icon(Icons.Default.AccountCircle, "Usuario", tint = LifePillColors.Primary) },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = LifePillColors.Surface,
+                unfocusedContainerColor = LifePillColors.Surface,
+                focusedBorderColor = LifePillColors.Primary,
+                unfocusedBorderColor = LifePillColors.OnSurfaceVariant,
+                focusedTextColor = LifePillColors.OnSurface,
+                unfocusedTextColor = LifePillColors.OnSurface
+            )
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        LifePillTextField(
-            field = FormField(value = birthDate),
-            onValueChange = {},
-            label = "Fecha de Nacimiento",
-            leadingIcon = Icons.Default.DateRange,
-            readOnly = true,
-            modifier = Modifier.clickable { onBirthDateClick() }
+        OutlinedTextField(
+            value = birthDate,
+            onValueChange = { value ->
+                val digitsOnly = value.filter { it.isDigit() }
+                if (digitsOnly.length <= 8) {
+                    var isValid = true
+                    if (digitsOnly.length >= 2) {
+                        val day = digitsOnly.substring(0, 2).toIntOrNull() ?: 0
+                        if (day > 31 || day == 0) isValid = false
+                    }
+                    if (digitsOnly.length >= 4) {
+                        val month = digitsOnly.substring(2, 4).toIntOrNull() ?: 0
+                        if (month > 12 || month == 0) isValid = false
+                    }
+                    if (digitsOnly.length == 8) {
+                        val year = digitsOnly.substring(4, 8).toIntOrNull() ?: 0
+                        val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+                        if (year > currentYear) isValid = false
+                    }
+
+                    if (isValid) {
+                        val formatted = when {
+                            digitsOnly.length <= 2 -> digitsOnly
+                            digitsOnly.length <= 4 -> digitsOnly.substring(0, 2) + "/" + digitsOnly.substring(2)
+                            else -> digitsOnly.substring(0, 2) + "/" + digitsOnly.substring(2, 4) + "/" + digitsOnly.substring(4)
+                        }
+                        onBirthDateChange(formatted)
+                    }
+                }
+            },
+            label = { Text("Fecha de Nacimiento (dd/mm/yyyy)", color = LifePillColors.OnSurfaceVariant) },
+            placeholder = { Text("dd/mm/yyyy", color = LifePillColors.OnSurfaceVariant.copy(alpha = 0.6f)) },
+            leadingIcon = { Icon(Icons.Default.DateRange, "Fecha", tint = LifePillColors.Primary) },
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = LifePillColors.Surface,
+                unfocusedContainerColor = LifePillColors.Surface,
+                focusedBorderColor = LifePillColors.Primary,
+                unfocusedBorderColor = LifePillColors.OnSurfaceVariant,
+                focusedTextColor = LifePillColors.OnSurface,
+                unfocusedTextColor = LifePillColors.OnSurface
+            )
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        GenderSelector(
-            selectedGender = selectedGender,
-            onGenderSelected = onGenderChange
-        )
+        GenderSelector(selectedGender = selectedGender, onGenderSelected = onGenderChange)
     }
 }
 
@@ -581,80 +679,115 @@ private fun ContactInfoStep(
     email: FormField,
     onEmailChange: (FormField) -> Unit,
     password: FormField,
-    onPasswordChange: (FormField) -> Unit
+    onPasswordChange: (FormField) -> Unit,
 ) {
     Column {
         SectionTitle("Información de Contacto")
-
         Spacer(modifier = Modifier.height(16.dp))
 
-        LifePillTextField(
-            field = phone,
+        OutlinedTextField(
+            value = phone.value,
             onValueChange = { value ->
-                val validation = validatePhone(value)
-                onPhoneChange(
-                    FormField(
-                        value = value,
-                        error = validation.errorMessage,
-                        isValid = validation.isValid
-                    )
-                )
+                val digitsOnly = value.filter { it.isDigit() }
+                if (digitsOnly.length <= 10) {
+                    val validation = validatePhone(digitsOnly)
+                    onPhoneChange(FormField(value = digitsOnly, error = validation.errorMessage, isValid = validation.isValid))
+                }
             },
-            label = "Teléfono",
-            leadingIcon = Icons.Default.Phone,
-            keyboardType = KeyboardType.Phone
+            label = { Text("Teléfono", color = LifePillColors.OnSurfaceVariant) },
+            leadingIcon = { Icon(Icons.Default.Phone, "Teléfono", tint = LifePillColors.Primary) },
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+            shape = RoundedCornerShape(12.dp),
+            isError = !phone.isValid && phone.error.isNotEmpty(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = LifePillColors.Surface,
+                unfocusedContainerColor = LifePillColors.Surface,
+                focusedBorderColor = LifePillColors.Primary,
+                unfocusedBorderColor = LifePillColors.OnSurfaceVariant,
+                focusedTextColor = LifePillColors.OnSurface,
+                unfocusedTextColor = LifePillColors.OnSurface,
+                errorTextColor = LifePillColors.OnSurface
+            )
         )
 
+
         Spacer(modifier = Modifier.height(16.dp))
 
-        LifePillTextField(
-            field = FormField(value = address),
+        OutlinedTextField(
+            value = address,
             onValueChange = { onAddressChange(it) },
-            label = "Dirección",
-            leadingIcon = Icons.Default.Home
+            label = { Text("Dirección", color = LifePillColors.OnSurfaceVariant) },
+            leadingIcon = { Icon(Icons.Default.Home, "Dirección", tint = LifePillColors.Primary) },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = LifePillColors.Surface,
+                unfocusedContainerColor = LifePillColors.Surface,
+                focusedBorderColor = LifePillColors.Primary,
+                unfocusedBorderColor = LifePillColors.OnSurfaceVariant,
+                focusedTextColor = LifePillColors.OnSurface,
+                unfocusedTextColor = LifePillColors.OnSurface
+            )
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
         SectionTitle("Credenciales de Acceso")
-
         Spacer(modifier = Modifier.height(16.dp))
 
-        LifePillTextField(
-            field = email,
+        OutlinedTextField(
+            value = email.value,
             onValueChange = { value ->
                 val validation = validateEmail(value)
-                onEmailChange(
-                    FormField(
-                        value = value,
-                        error = validation.errorMessage,
-                        isValid = validation.isValid
-                    )
-                )
+                onEmailChange(FormField(value = value, error = validation.errorMessage, isValid = validation.isValid))
             },
-            label = "Correo Electrónico",
-            leadingIcon = Icons.Default.Email,
-            keyboardType = KeyboardType.Email
+            label = { Text("Correo Electrónico", color = LifePillColors.OnSurfaceVariant) },
+            leadingIcon = { Icon(Icons.Default.Email, "Email", tint = LifePillColors.Primary) },
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            shape = RoundedCornerShape(12.dp),
+            isError = !email.isValid && email.error.isNotEmpty(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = LifePillColors.Surface,
+                unfocusedContainerColor = LifePillColors.Surface,
+                focusedBorderColor = LifePillColors.Primary,
+                unfocusedBorderColor = LifePillColors.OnSurfaceVariant,
+                focusedTextColor = LifePillColors.OnSurface,
+                unfocusedTextColor = LifePillColors.OnSurface,
+                errorTextColor = LifePillColors.OnSurface
+            )
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        LifePillTextField(
-            field = password,
+        var passwordVisible by remember { mutableStateOf(false) }
+
+        OutlinedTextField(
+            value = password.value,
             onValueChange = { value ->
                 val validation = validatePassword(value)
-                onPasswordChange(
-                    FormField(
-                        value = value,
-                        error = validation.errorMessage,
-                        isValid = validation.isValid
-                    )
-                )
+                onPasswordChange(FormField(value = value, error = validation.errorMessage, isValid = validation.isValid))
             },
-            label = "Contraseña",
-            leadingIcon = Icons.Default.Lock,
-            keyboardType = KeyboardType.Password,
-            isPassword = true
+            label = { Text("Contraseña", color = LifePillColors.OnSurfaceVariant) },
+            leadingIcon = { Icon(Icons.Default.Lock, "Contraseña", tint = LifePillColors.Primary) },
+            trailingIcon = {
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+
+                }
+            },
+            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = LifePillColors.Surface,
+                unfocusedContainerColor = LifePillColors.Surface,
+                focusedBorderColor = LifePillColors.Primary,
+                unfocusedBorderColor = LifePillColors.OnSurfaceVariant,
+                focusedTextColor = LifePillColors.OnSurface,
+                unfocusedTextColor = LifePillColors.OnSurface
+            )
         )
     }
 }
@@ -668,60 +801,99 @@ private fun PhysicalInfoStep(
     height: String,
     onHeightChange: (String) -> Unit,
     selectedWorkMode: String,
-    onWorkModeChange: (String) -> Unit // CORREGIDO: cambié el nombre del parámetro
+    onWorkModeChange: (String) -> Unit
 ) {
     Column {
         SectionTitle("Información Física (Opcional)")
-
         Spacer(modifier = Modifier.height(16.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            LifePillTextField(
-                field = FormField(value = age),
+            OutlinedTextField(
+                value = age,
                 onValueChange = { value ->
                     val filteredValue = value.filter { it.isDigit() }
-                    onAgeChange(filteredValue)
+                    if (filteredValue.length <= 2) {
+                        onAgeChange(filteredValue)
+                    }
                 },
-                label = "Edad",
-                leadingIcon = Icons.Default.Face,
-                keyboardType = KeyboardType.Number,
-                modifier = Modifier.weight(1f)
+                label = { Text("Edad", color = LifePillColors.OnSurfaceVariant) },
+                leadingIcon = { Icon(Icons.Default.Face, "Edad", tint = LifePillColors.Primary) },
+                modifier = Modifier.weight(1f),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                shape = RoundedCornerShape(12.dp),
+                isError = age.isNotEmpty() && !validateAge(age).isValid,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = LifePillColors.Surface,
+                    unfocusedContainerColor = LifePillColors.Surface,
+                    focusedBorderColor = LifePillColors.Primary,
+                    unfocusedBorderColor = LifePillColors.OnSurfaceVariant,
+                    focusedTextColor = LifePillColors.OnSurface,
+                    unfocusedTextColor = LifePillColors.OnSurface,
+                    errorTextColor = LifePillColors.OnSurface
+                )
             )
 
-            LifePillTextField(
-                field = FormField(value = weight),
+            OutlinedTextField(
+                value = weight,
                 onValueChange = { value ->
                     val filteredValue = value.filter { it.isDigit() }
-                    onWeightChange(filteredValue)
+                    if (filteredValue.length <= 3) {
+                        onWeightChange(filteredValue)
+                    }
                 },
-                label = "Peso (kg)",
-                leadingIcon = Icons.Default.Create,
-                keyboardType = KeyboardType.Number,
-                modifier = Modifier.weight(1f)
+                label = { Text("Peso (kg)", color = LifePillColors.OnSurfaceVariant) },
+                leadingIcon = { Icon(Icons.Default.FavoriteBorder, "Peso", tint = LifePillColors.Primary) },
+                modifier = Modifier.weight(1f),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                shape = RoundedCornerShape(12.dp),
+                isError = weight.isNotEmpty() && !validateWeight(weight).isValid,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = LifePillColors.Surface,
+                    unfocusedContainerColor = LifePillColors.Surface,
+                    focusedBorderColor = LifePillColors.Primary,
+                    unfocusedBorderColor = LifePillColors.OnSurfaceVariant,
+                    focusedTextColor = LifePillColors.OnSurface,
+                    unfocusedTextColor = LifePillColors.OnSurface,
+                    errorTextColor = LifePillColors.OnSurface
+                )
             )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        LifePillTextField(
-            field = FormField(value = height),
+        OutlinedTextField(
+            value = height,
             onValueChange = { value ->
                 val filteredValue = value.filter { it.isDigit() }
-                onHeightChange(filteredValue)
+                if (filteredValue.length <= 3) {
+                    onHeightChange(filteredValue)
+                }
             },
-            label = "Estatura (cm)",
-            leadingIcon = Icons.Default.Create,
-            keyboardType = KeyboardType.Number
+            label = { Text("Estatura (cm)", color = LifePillColors.OnSurfaceVariant) },
+            leadingIcon = { Icon(Icons.Default.Info, "Estatura", tint = LifePillColors.Primary) },
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            shape = RoundedCornerShape(12.dp),
+            isError = height.isNotEmpty() && !validateHeight(height).isValid,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = LifePillColors.Surface,
+                unfocusedContainerColor = LifePillColors.Surface,
+                focusedBorderColor = LifePillColors.Primary,
+                unfocusedBorderColor = LifePillColors.OnSurfaceVariant,
+                focusedTextColor = LifePillColors.OnSurface,
+                unfocusedTextColor = LifePillColors.OnSurface,
+                errorTextColor = LifePillColors.OnSurface
+            )
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
         WorkModeSelector(
             selectedWorkMode = selectedWorkMode,
-            onWorkModeSelected = onWorkModeChange // CORREGIDO: ahora usa el parámetro correcto
+            onWorkModeSelected = onWorkModeChange
         )
     }
 }
@@ -813,11 +985,11 @@ private fun NavigationButtons(
             OutlinedButton(
                 onClick = onPrevious,
                 modifier = Modifier.height(56.dp),
-                shape = RoundedCornerShape(28.dp), // Mismo estilo redondeado
+                shape = RoundedCornerShape(28.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = LifePillColors.Primary
                 ),
-                border = BorderStroke(2.dp, LifePillColors.Primary) // Borde más grueso
+                border = BorderStroke(2.dp, LifePillColors.Primary)
             ) {
                 Text(
                     text = "Anterior",
@@ -899,7 +1071,7 @@ private fun GenderButton(
     Button(
         onClick = onClick,
         modifier = modifier.height(48.dp),
-        shape = RoundedCornerShape(24.dp), // Más redondeado como el estilo del onboarding
+        shape = RoundedCornerShape(24.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = if (isSelected) LifePillColors.Primary else LifePillColors.Surface,
             contentColor = if (isSelected) Color.White else LifePillColors.OnSurfaceVariant
@@ -918,94 +1090,10 @@ private fun GenderButton(
     }
 }
 
-@Composable
-private fun LifePillTextField(
-    field: FormField,
-    onValueChange: (String) -> Unit,
-    label: String,
-    leadingIcon: ImageVector,
-    modifier: Modifier = Modifier,
-    keyboardType: KeyboardType = KeyboardType.Text,
-    isPassword: Boolean = false,
-    readOnly: Boolean = false,
-    trailingIcon: @Composable (() -> Unit)? = null
-) {
-    var passwordVisible by remember { mutableStateOf(false) }
-    val hasError = !field.isValid && field.error.isNotEmpty()
-
-    Column(modifier = modifier) {
-        OutlinedTextField(
-            value = field.value,
-            onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text(label, color = LifePillColors.OnSurfaceVariant) },
-            singleLine = true,
-            shape = RoundedCornerShape(12.dp),
-            readOnly = readOnly,
-            visualTransformation = if (isPassword && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None,
-            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-            isError = hasError,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = if (hasError) Color.Black else LifePillColors.Surface,
-                unfocusedContainerColor = if (hasError) Color.Black else LifePillColors.Surface,
-                focusedBorderColor = if (hasError) LifePillColors.Error else LifePillColors.Primary,
-                unfocusedBorderColor = if (hasError) LifePillColors.Error else LifePillColors.OnSurfaceVariant,
-                focusedTextColor = if (hasError) Color.White else LifePillColors.OnSurface,
-                unfocusedTextColor = if (hasError) Color.White else LifePillColors.OnSurface,
-                cursorColor = if (hasError) Color.White else LifePillColors.Primary,
-                focusedLabelColor = if (hasError) Color.White else LifePillColors.Primary,
-                unfocusedLabelColor = if (hasError) Color.White else LifePillColors.OnSurfaceVariant,
-                errorBorderColor = LifePillColors.Error,
-                errorLabelColor = Color.White,
-                errorContainerColor = Color.Black,
-                errorTextColor = Color.White,
-                errorCursorColor = Color.White
-            )
-        )
-
-        if (hasError) {
-            Text(
-                text = field.error,
-                color = LifePillColors.Error,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun LifePillButton(
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true
-) {
-    Button(
-        onClick = onClick,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(56.dp),
-        enabled = enabled,
-        shape = RoundedCornerShape(12.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = LifePillColors.Primary,
-            contentColor = Color.White,
-            disabledContainerColor = LifePillColors.Surface,
-            disabledContentColor = LifePillColors.OnSurfaceVariant
-        )
-    ) {
-        Text(
-            text = text,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold
-        )
-    }
-}
-
 private fun validateEmail(email: String): ValidationResult {
     return when {
         email.isEmpty() -> ValidationResult(false, "El correo es obligatorio")
+        !email.contains("@") -> ValidationResult(false, "El correo debe contener @")
         !Patterns.EMAIL_ADDRESS.matcher(email).matches() -> ValidationResult(false, "Formato de correo inválido")
         else -> ValidationResult(true)
     }
@@ -1025,6 +1113,7 @@ private fun validateDocumentNumber(number: String, type: String): ValidationResu
             when {
                 number.isEmpty() -> ValidationResult(false, "Campo obligatorio")
                 !number.all { it.isDigit() } -> ValidationResult(false, "Solo números")
+                number.length > 15 -> ValidationResult(false, "Máximo 15 dígitos")
                 number.length < 7 -> ValidationResult(false, "Mínimo 7 dígitos")
                 else -> ValidationResult(true)
             }
@@ -1063,22 +1152,39 @@ private fun validatePhone(phone: String): ValidationResult {
     val digitsOnly = phone.replace(Regex("[^\\d]"), "")
     return when {
         phone.isEmpty() -> ValidationResult(false, "Campo obligatorio")
-        digitsOnly.length < 10 -> ValidationResult(false, "Mínimo 10 dígitos")
-        digitsOnly.length > 15 -> ValidationResult(false, "Máximo 15 dígitos")
+        digitsOnly.length != 10 -> ValidationResult(false, "Debe tener exactamente 10 dígitos")
         else -> ValidationResult(true)
     }
 }
 
-private fun formatDate(millis: Long): String {
-    val calendar = Calendar.getInstance().apply {
-        timeInMillis = millis
+private fun validateAge(age: String): ValidationResult {
+    return when {
+        age.isEmpty() -> ValidationResult(true)
+        age.length > 3 -> ValidationResult(false, "Máximo 3 dígitos")
+        age.toIntOrNull() == null -> ValidationResult(false, "Solo números")
+        age.toInt() < 1 || age.toInt() > 150 -> ValidationResult(false, "Edad inválida")
+        else -> ValidationResult(true)
     }
-    return String.format(
-        "%02d/%02d/%04d",
-        calendar.get(Calendar.DAY_OF_MONTH),
-        calendar.get(Calendar.MONTH) + 1,
-        calendar.get(Calendar.YEAR)
-    )
+}
+
+private fun validateWeight(weight: String): ValidationResult {
+    return when {
+        weight.isEmpty() -> ValidationResult(true)
+        weight.length > 3 -> ValidationResult(false, "Máximo 3 dígitos")
+        weight.toIntOrNull() == null -> ValidationResult(false, "Solo números")
+        weight.toInt() < 1 || weight.toInt() > 500 -> ValidationResult(false, "Peso inválido")
+        else -> ValidationResult(true)
+    }
+}
+
+private fun validateHeight(height: String): ValidationResult {
+    return when {
+        height.isEmpty() -> ValidationResult(true)
+        height.length > 3 -> ValidationResult(false, "Máximo 3 dígitos")
+        height.toIntOrNull() == null -> ValidationResult(false, "Solo números")
+        height.toInt() < 50 || height.toInt() > 250 -> ValidationResult(false, "Altura inválida")
+        else -> ValidationResult(true)
+    }
 }
 
 @Preview(showBackground = true)
