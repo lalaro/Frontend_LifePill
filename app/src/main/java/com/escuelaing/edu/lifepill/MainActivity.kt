@@ -18,7 +18,10 @@ import com.escuelaing.edu.lifepill.ui.screens.loginScreen.forgotPasswordScreen.V
 import com.escuelaing.edu.lifepill.ui.screens.loginScreen.forgotPasswordScreen.ResetPasswordScreen
 import com.escuelaing.edu.lifepill.ui.screens.loginScreen.forgotPasswordScreen.PasswordSuccessScreen
 import com.escuelaing.edu.lifepill.ui.screens.homeScreen.AdminHomeScreen
-import com.escuelaing.edu.lifepill.ui.screens.homeScreen.UserHomeScreen
+import com.escuelaing.edu.lifepill.ui.screens.homeScreen.UserHomeScreen.UserHomeScreen
+import com.escuelaing.edu.lifepill.ui.screens.homeScreen.UserHomeScreen.FoodRegisterScreen
+import com.escuelaing.edu.lifepill.ui.screens.homeScreen.UserHomeScreen.AIAssistantScreen
+import com.escuelaing.edu.lifepill.ui.screens.homeScreen.UserHomeScreen.UserProfileScreen
 
 
 class MainActivity : ComponentActivity() {
@@ -89,6 +92,82 @@ fun AppNavigation() {
                 onLogout = {
                     navController.navigate("login") {
                         popUpTo("user_home") { inclusive = true }
+                    }
+                },
+                onNavigateToRegister = {
+                    navController.navigate("food_register")
+                },
+                onNavigateToAssistant = {
+                    navController.navigate("ai_assistant")
+                },
+                onNavigateToProfile = {
+                    navController.navigate("user_profile")
+                }
+            )
+        }
+
+        composable("food_register") {
+            FoodRegisterScreen(
+                onBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToHome = {
+                    navController.navigate("user_home") {
+                        popUpTo("food_register") { inclusive = true }
+                    }
+                },
+                onNavigateToRegister = {
+                },
+                onNavigateToAssistant = {
+                    navController.navigate("ai_assistant")
+                },
+                onNavigateToProfile = {
+                    navController.navigate("user_profile")
+                },
+                onSaveFood = { foods ->
+                    println("Foods saved: $foods")
+                }
+            )
+        }
+
+        composable("ai_assistant") {
+            AIAssistantScreen(
+                onBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToHome = {
+                    navController.navigate("user_home") {
+                        popUpTo("ai_assistant") { inclusive = true }
+                    }
+                },
+                onNavigateToRegister = {
+                    navController.navigate("food_register")
+                },
+                onNavigateToAssistant = {
+                    // Already on assistant screen
+                },
+                onNavigateToProfile = {
+                    navController.navigate("user_profile")
+                }
+            )
+        }
+
+        composable("user_profile") {
+            UserProfileScreen(
+                onNavigateToHome = {
+                    navController.navigate("user_home") {
+                        popUpTo("user_profile") { inclusive = true }
+                    }
+                },
+                onNavigateToRegister = {
+                    navController.navigate("food_register")
+                },
+                onNavigateToAssistant = {
+                    navController.navigate("ai_assistant")
+                },
+                onLogout = {
+                    navController.navigate("login") {
+                        popUpTo("user_profile") { inclusive = true }
                     }
                 }
             )
