@@ -21,6 +21,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.escuelaing.edu.lifepill.ui.screens.loginScreen.LifePillColors
 import com.escuelaing.edu.lifepill.ui.theme.LifePillTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
+import java.util.concurrent.TimeUnit
 
 data class ChatMessage(
     val id: String = "",
@@ -39,6 +48,7 @@ fun AIAssistantScreen(
     onNavigateToProfile: () -> Unit = {}
 ) {
     val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
     var messages by remember { mutableStateOf<List<ChatMessage>>(emptyList()) }
     var inputText by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
@@ -257,24 +267,34 @@ fun AIAssistantScreen(
                     Button(
                         onClick = {
                             if (inputText.isNotBlank()) {
+                                val userMessage = inputText
                                 messages = messages + ChatMessage(
                                     id = "user_${System.currentTimeMillis()}",
-                                    content = inputText,
+                                    content = userMessage,
                                     isUser = true
                                 )
                                 inputText = ""
                                 isLoading = true
 
-                                // Simulate AI response delay
-                                Thread {
-                                    Thread.sleep(1500)
-                                    messages = messages + ChatMessage(
-                                        id = "ai_${System.currentTimeMillis()}",
-                                        content = generateAIResponse(messages),
-                                        isUser = false
-                                    )
-                                    isLoading = false
-                                }.start()
+                                // Call API
+                                coroutineScope.launch {
+                                    try {
+                                        val aiResponse = getAIResponse(userMessage)
+                                        messages = messages + ChatMessage(
+                                            id = "ai_${System.currentTimeMillis()}",
+                                            content = aiResponse,
+                                            isUser = false
+                                        )
+                                    } catch (e: Exception) {
+                                        messages = messages + ChatMessage(
+                                            id = "ai_${System.currentTimeMillis()}",
+                                            content = "Lo siento, hubo un error al procesar tu solicitud. Por favor, intenta de nuevo.",
+                                            isUser = false
+                                        )
+                                    } finally {
+                                        isLoading = false
+                                    }
+                                }
                             }
                         },
                         modifier = Modifier
@@ -332,30 +352,44 @@ private fun ChatMessageBubble(message: ChatMessage) {
     }
 }
 
-private fun generateAIResponse(messages: List<ChatMessage>): String {
-    val responses = listOf(
-        "Basándome en tu registro nutricional diario, te recomiendo aumentar tu ingesta de agua.",
-        "¡Excelente opción! Considera agregar más vegetales para equilibrar tus comidas.",
-        "Noté que tuviste un buen desayuno. Para el almuerzo, te sugiero una combinación balanceada de proteína y vegetales.",
-        "Tu ingesta de calorías se ve balanceada hoy. ¡Sigue adelante!",
-        "¿Te gustaría algunas recomendaciones para snacks saludables?",
-        "Agregar más granos integrales a tu dieta puede mejorar tu balance nutricional.",
-        "Esa combinación de alimentos se ve nutritivamente balanceada. ¡Excelente elección!",
-        "Te recomiendo rastrear tus porciones para asegurar una nutrición óptima.",
-        "Veo que has estado comiendo bien. Mantén estos hábitos saludables.",
-        "¿Necesitas consejos sobre cómo preparar comidas más saludables?",
-        "Recuerda mantenerte hidratado durante todo el día.",
-        "Las proteínas son importantes para tu cuerpo. ¿Las incluiste hoy?",
-        "Una buena estrategia es hacer 5 comidas pequeñas durante el día.",
-        "Los alimentos ricos en fibra te ayudarán a sentirte más satisfecho.",
-        "Intenta comer despacio y masticar bien para mejor digestión.",
-        "¿Has considerado añadir frutas frescas a tus desayunos?",
-        "Las grasas saludables como el aguacate son excelentes para ti.",
-        "Recuerda que la hidratación es tan importante como la alimentación.",
-        "¿Cuál es tu objetivo nutricional principal?",
-        "Los vegetales de hoja verde son muy nutritivos y bajos en calorías."
-    )
-    return responses.random()
+private suspend fun getAIResponse(prompt: String): String = withContext(Dispatchers.IO) {
+    val client = OkHttpClient.Builder()
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .writeTimeout(30, TimeUnit.SECONDS)
+        .build()
+
+    val jsonObject = JSONObject().apply {
+        put("prompt", prompt)
+    }
+
+    val mediaType = "application/json; charset=utf-8".toMediaType()
+    val requestBody = jsonObject.toString().toRequestBody(mediaType)
+
+    val request = Request.Builder()
+        .url("http://3.218.97.71:8080/chatgpt/generate")
+        .post(requestBody)
+        .addHeader("Content-Type", "application/json")
+        .build()
+
+    client.newCall(request).execute().use { response ->
+        if (!response.isSuccessful) {
+            throw Exception("Error en la respuesta del servidor: ${response.code}")
+        }
+
+        val responseBody = response.body?.string()
+            ?: throw Exception("Respuesta vacía del servidor")
+
+        // La API probablemente devuelve un JSON con la respuesta
+        // Ajusta esto según el formato exacto de tu API
+        return@withContext try {
+            val jsonResponse = JSONObject(responseBody)
+            jsonResponse.optString("response", responseBody)
+        } catch (e: Exception) {
+            // Si no es JSON, devolver el texto directo
+            responseBody
+        }
+    }
 }
 
 @Preview(showBackground = true)

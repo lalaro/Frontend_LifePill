@@ -12,7 +12,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.escuelaing.edu.lifepill.ui.theme.LifePillTheme
 import com.escuelaing.edu.lifepill.ui.screens.OnBoardingScreen
-import com.escuelaing.edu.lifepill.ui.screens.loginScreen.LoginScreens
+import com.escuelaing.edu.lifepill.ui.screens.loginScreen.LoginScreenContainer
 import com.escuelaing.edu.lifepill.ui.screens.loginScreen.forgotPasswordScreen.ForgotPasswordScreen
 import com.escuelaing.edu.lifepill.ui.screens.loginScreen.forgotPasswordScreen.VerificationScreen
 import com.escuelaing.edu.lifepill.ui.screens.loginScreen.forgotPasswordScreen.ResetPasswordScreen
@@ -59,23 +59,18 @@ fun AppNavigation() {
         }
 
         composable("login") {
-            LoginScreens(
-                onForgotPasswordClick = {
-                    navController.navigate("forgot_password")
-                },
+            LoginScreenContainer(
+                onForgotPasswordClick = { navController.navigate("forgot_password") },
                 onLoginSuccess = { email ->
                     if (email == "admin@gmail.com") {
-                        navController.navigate("admin_home") {
-                            popUpTo("login") { inclusive = true }
-                        }
+                        navController.navigate("admin_home") { popUpTo("login") { inclusive = true } }
                     } else {
-                        navController.navigate("user_home") {
-                            popUpTo("login") { inclusive = true }
-                        }
+                        navController.navigate("user_home") { popUpTo("login") { inclusive = true } }
                     }
                 }
             )
         }
+
 
         composable("admin_home") {
             AdminHomeScreen(

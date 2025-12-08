@@ -32,7 +32,12 @@ import java.util.*
 import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.painterResource
-
+import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlin.compareTo
+import kotlin.dec
+import kotlin.inc
+import com.escuelaing.edu.lifepill.model.RegistrationData
+import com.escuelaing.edu.lifepill.ui.screens.loginScreen.RegisterViewModel
 object LifePillColors {
     val Primary = Color(0xFF007bff)
     val Background = Color(0xFF1E1E1E)
@@ -57,7 +62,8 @@ data class FormField(
 fun LoginScreens(
     onForgotPasswordClick: () -> Unit = {},
     onLoginSuccess: (String) -> Unit = {},
-    onNavigateToRegister: () -> Unit = {}
+    onNavigateToRegister: () -> Unit = {},
+    onLogin: (String, String) -> Unit
 ) {
     var isLoginScreen by remember { mutableStateOf(true) }
 
@@ -90,7 +96,9 @@ fun LoginScreens(
                     onNavigateToRegister = onNavigateToRegister
                 )
             } else {
-                CreateAccountContent()
+                CreateAccountContent(onFinish = { registrationData ->
+                    onNavigateToRegister()
+                })
             }
         }
     }
@@ -376,24 +384,12 @@ private fun OnBoardingStyleButton(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateAccountContent() {
+fun CreateAccountContent(
+    viewModel: RegisterViewModel = viewModel(),
+    onFinish: (RegistrationData) -> Unit = {}
+) {
     var currentStep by remember { mutableStateOf(0) }
     val scrollState = rememberScrollState()
-    var documentType by remember { mutableStateOf("CC") }
-    var documentNumber by remember { mutableStateOf(FormField()) }
-    var firstName by remember { mutableStateOf(FormField()) }
-    var lastName by remember { mutableStateOf(FormField()) }
-    var username by remember { mutableStateOf(FormField()) }
-    var email by remember { mutableStateOf(FormField()) }
-    var password by remember { mutableStateOf(FormField()) }
-    var phone by remember { mutableStateOf(FormField()) }
-    var address by remember { mutableStateOf("") }
-    var birthDate by remember { mutableStateOf("") }
-    var selectedGender by remember { mutableStateOf("") }
-    var age by remember { mutableStateOf("") }
-    var weight by remember { mutableStateOf("") }
-    var height by remember { mutableStateOf("") }
-    var selectedWorkMode by remember { mutableStateOf("") }
     var showDatePicker by remember { mutableStateOf(false) }
 
     Column(
@@ -410,42 +406,42 @@ fun CreateAccountContent() {
 
         when (currentStep) {
             0 -> DocumentInfoStep(
-                documentType = documentType,
-                onDocumentTypeChange = { documentType = it },
-                documentNumber = documentNumber,
-                onDocumentNumberChange = { documentNumber = it }
+                documentType = viewModel.documentType,
+                onDocumentTypeChange = { viewModel.documentType = it },
+                documentNumber = viewModel.documentNumber,
+                onDocumentNumberChange = { viewModel.documentNumber = it }
             )
             1 -> PersonalInfoStep(
-                firstName = firstName,
-                onFirstNameChange = { firstName = it },
-                lastName = lastName,
-                onLastNameChange = { lastName = it },
-                username = username,
-                onUsernameChange = { username = it },
-                birthDate = birthDate,
-                onBirthDateChange = { birthDate = it },
-                selectedGender = selectedGender,
-                onGenderChange = { selectedGender = it }
+                firstName = viewModel.firstName,
+                onFirstNameChange = { viewModel.firstName = it },
+                lastName = viewModel.lastName,
+                onLastNameChange = { viewModel.lastName = it },
+                username = viewModel.username,
+                onUsernameChange = { viewModel.username = it },
+                birthDate = viewModel.birthDate,
+                onBirthDateChange = { viewModel.birthDate = it },
+                selectedGender = viewModel.selectedGender,
+                onGenderChange = { viewModel.selectedGender = it }
             )
             2 -> ContactInfoStep(
-                phone = phone,
-                onPhoneChange = { phone = it },
-                address = address,
-                onAddressChange = { address = it },
-                email = email,
-                onEmailChange = { email = it },
-                password = password,
-                onPasswordChange = { password = it }
+                phone = viewModel.phone,
+                onPhoneChange = { viewModel.phone = it },
+                address = viewModel.address,
+                onAddressChange = { viewModel.address = it },
+                email = viewModel.email,
+                onEmailChange = { viewModel.email = it },
+                password = viewModel.password,
+                onPasswordChange = { viewModel.password = it }
             )
             3 -> PhysicalInfoStep(
-                age = age,
-                onAgeChange = { age = it },
-                weight = weight,
-                onWeightChange = { weight = it },
-                height = height,
-                onHeightChange = { height = it },
-                selectedWorkMode = selectedWorkMode,
-                onWorkModeChange = { selectedWorkMode = it }
+                age = viewModel.age,
+                onAgeChange = { viewModel.age = it },
+                weight = viewModel.weight,
+                onWeightChange = { viewModel.weight = it },
+                height = viewModel.height,
+                onHeightChange = { viewModel.height = it },
+                selectedWorkMode = viewModel.selectedWorkMode,
+                onWorkModeChange = { viewModel.selectedWorkMode = it }
             )
         }
 
@@ -456,7 +452,11 @@ fun CreateAccountContent() {
             totalSteps = 4,
             onPrevious = { if (currentStep > 0) currentStep-- },
             onNext = { if (currentStep < 3) currentStep++ },
-            onFinish = { }
+            onFinish = {
+                viewModel.saveToLocal()
+                val data = viewModel.buildRegistrationData()
+                onFinish(data)
+            }
         )
     }
 }
@@ -1195,6 +1195,6 @@ private fun validateHeight(height: String): ValidationResult {
 @Composable
 fun LoginScreenPreview() {
     LifePillTheme {
-        LoginScreens()
+        LoginScreens(onLogin = { _, _ -> })
     }
 }
