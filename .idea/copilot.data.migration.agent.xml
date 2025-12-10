@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AgentMigrationStateService">
+    <option name="pendingSessionIds">
+      <option value="0e96fcd9-9786-4846-be4c-e68b33273940" />
+      <option value="75563534-b4af-40e2-b109-4322aec84fcb" />
+      <option value="893c231a-f56c-48a7-94d3-3141821132d5" />
+      <option value="91ac8e52-276e-4427-998f-fc39d4871b39" />
+      <option value="96315730-e8c4-4a26-ac8e-ad8611611b2d" />
+      <option value="ee78ce46-0864-448c-a980-41c4546f3940" />
+    </option>
+    <option name="pendingTurns">
+      <map>
+        <entry key="0e96fcd9-9786-4846-be4c-e68b33273940">
+          <value>
+            <set>
+              <option value="71376997-aa9f-4718-a903-0dd0cdfc0800" />
+            </set>
+          </value>
+        </entry>
+        <entry key="75563534-b4af-40e2-b109-4322aec84fcb">
+          <value>
+            <set>
+              <option value="d3163f5e-2895-4fb5-9847-5601d2146e4c" />
+              <option value="8d9eb1aa-853e-411d-9364-1ea13e3b8f6a" />
+              <option value="9d7fc02a-4520-438d-bb69-efbadd66325b" />
+              <option value="7f4ec771-bea4-4af5-b13d-8a304e9b9c4e" />
+              <option value="0e107ab3-7319-418f-b566-5a6d06d82398" />
+              <option value="dc39b668-fbad-449c-8983-a36cc3c25d5c" />
+              <option value="7564bf3f-838c-4aa5-9b2e-145223f747f2" />
+              <option value="8e20ba13-0365-4041-8f32-45ff7394c5b8" />
+              <option value="693fced2-336c-4304-a802-d45dc993f2cd" />
+              <option value="82ae48c8-d5db-4919-93a3-76b72d46e929" />
+              <option value="1e938afa-4995-4b23-8e4d-c4036fa7df59" />
+            </set>
+          </value>
+        </entry>
+        <entry key="893c231a-f56c-48a7-94d3-3141821132d5">
+          <value>
+            <set>
+              <option value="40642a33-c29a-42bd-9bc7-404c1661ebb9" />
+              <option value="03571f44-8591-4c39-9a28-0ec2950f3011" />
+              <option value="2b9eeeb4-6591-445e-a461-1377406a1498" />
+            </set>
+          </value>
+        </entry>
+        <entry key="91ac8e52-276e-4427-998f-fc39d4871b39">
+          <value>
+            <set>
+              <option value="e012df9b-a914-4099-b52c-76e81b86176b" />
+              <option value="ff628e27-3209-4ad2-bef0-74ecc038f99d" />
+            </set>
+          </value>
+        </entry>
+        <entry key="96315730-e8c4-4a26-ac8e-ad8611611b2d">
+          <value>
+            <set>
+              <option value="0a08ee88-0236-45cf-b30f-b47ae3bccc2f" />
+            </set>
+          </value>
+        </entry>
+        <entry key="ee78ce46-0864-448c-a980-41c4546f3940">
+          <value>
+            <set>
+              <option value="67a7341c-2fa1-45c6-8ea5-c955c32b3ebf" />
+              <option value="5f00ee96-57de-40da-9c3a-fb8f8c132a70" />
+              <option value="a51a14a5-ac7d-4e7a-8483-19dcfc8432e8" />
+              <option value="d64068a4-8e6a-4444-a4a2-b5087b89e771" />
+            </set>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>

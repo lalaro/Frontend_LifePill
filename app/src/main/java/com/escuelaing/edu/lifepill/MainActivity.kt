@@ -4,12 +4,14 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.escuelaing.edu.lifepill.auth.AuthViewModel
 import com.escuelaing.edu.lifepill.ui.theme.LifePillTheme
 import com.escuelaing.edu.lifepill.ui.screens.OnBoardingScreen
 import com.escuelaing.edu.lifepill.ui.screens.loginScreen.LoginScreens
@@ -25,6 +27,8 @@ import com.escuelaing.edu.lifepill.ui.screens.homeScreen.UserHomeScreen.UserProf
 
 
 class MainActivity : ComponentActivity() {
+    private val authViewModel: AuthViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -33,7 +37,7 @@ class MainActivity : ComponentActivity() {
                 Surface(
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    AppNavigation()
+                    AppNavigation(authViewModel = authViewModel)
                 }
             }
         }
@@ -41,7 +45,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(authViewModel: AuthViewModel) {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = "onboarding") {
         composable("onboarding") {
@@ -60,11 +64,12 @@ fun AppNavigation() {
 
         composable("login") {
             LoginScreens(
+                authViewModel = authViewModel,
                 onForgotPasswordClick = {
                     navController.navigate("forgot_password")
                 },
-                onLoginSuccess = { email ->
-                    if (email == "admin@gmail.com") {
+                onLoginSuccess = { role ->
+                    if (role == "admin") {
                         navController.navigate("admin_home") {
                             popUpTo("login") { inclusive = true }
                         }

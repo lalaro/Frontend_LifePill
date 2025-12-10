@@ -30,9 +30,10 @@ import com.escuelaing.edu.lifepill.R
 import com.escuelaing.edu.lifepill.ui.theme.LifePillTheme
 import java.util.*
 import androidx.compose.foundation.Image
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.painterResource
-
+import com.escuelaing.edu.lifepill.auth.AuthViewModel
+import com.escuelaing.edu.lifepill.network.RegisterRequest
+import androidx.compose.runtime.livedata.observeAsState
 object LifePillColors {
     val Primary = Color(0xFF007bff)
     val Background = Color(0xFF1E1E1E)
@@ -55,6 +56,7 @@ data class FormField(
 
 @Composable
 fun LoginScreens(
+    authViewModel: AuthViewModel,
     onForgotPasswordClick: () -> Unit = {},
     onLoginSuccess: (String) -> Unit = {},
     onNavigateToRegister: () -> Unit = {}
@@ -83,14 +85,13 @@ fun LoginScreens(
             Spacer(modifier = Modifier.height(32.dp))
             if (isLoginScreen) {
                 LoginContent(
+                    authViewModel = authViewModel,
                     onForgotPasswordClick = onForgotPasswordClick,
-                    onLoginSuccess = { role ->
-                        onLoginSuccess(role)
-                    },
+                    onLoginSuccess = onLoginSuccess,
                     onNavigateToRegister = onNavigateToRegister
                 )
             } else {
-                CreateAccountContent()
+                CreateAccountContent(authViewModel = authViewModel)
             }
         }
     }
@@ -165,6 +166,7 @@ private fun TabButton(
 
 @Composable
 fun LoginContent(
+    authViewModel: AuthViewModel,
     onForgotPasswordClick: () -> Unit = {},
     onLoginSuccess: (String) -> Unit = {},
     onNavigateToRegister: () -> Unit = {},
@@ -173,18 +175,79 @@ fun LoginContent(
     var emailField by remember { mutableStateOf(FormField()) }
     var passwordField by remember { mutableStateOf(FormField()) }
     var isLoading by remember { mutableStateOf(false) }
-    var selectedRole by remember { mutableStateOf("usuario") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    // Observar resultados del ViewModel
+    val authResult by authViewModel.authResult.observeAsState()
+    val error by authViewModel.error.observeAsState()
+
+    // Manejar respuestas del servidor
+    LaunchedEffect(authResult) {
+        authResult?.let { response ->
+            isLoading = false
+            if (response.success && response.role != null) {
+                onLoginSuccess(response.role)
+            } else {
+                errorMessage = response.message ?: "Error al iniciar sesión"
+            }
+        }
+    }
+
+    LaunchedEffect(error) {
+        error?.let {
+            isLoading = false
+            errorMessage = it
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        // Mostrar mensaje de error si existe
+        errorMessage?.let { msg ->
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = LifePillColors.Error.copy(alpha = 0.1f)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .padding(12.dp)
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = LifePillColors.Error,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = msg,
+                        color = LifePillColors.Error,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+        }
+
         OutlinedTextField(
             value = emailField.value,
             onValueChange = { newValue ->
+                errorMessage = null
                 val validation = validateEmail(newValue)
-                emailField = emailField.copy(value = newValue, error = validation.errorMessage, isValid = validation.isValid)
+                emailField = emailField.copy(
+                    value = newValue,
+                    error = validation.errorMessage,
+                    isValid = validation.isValid
+                )
             },
             label = { Text("Correo Electrónico", color = LifePillColors.OnSurfaceVariant) },
             leadingIcon = {
@@ -218,7 +281,9 @@ fun LoginContent(
                 text = emailField.error,
                 color = LifePillColors.Error,
                 fontSize = 12.sp,
-                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, top = 4.dp)
             )
         }
 
@@ -227,6 +292,7 @@ fun LoginContent(
         OutlinedTextField(
             value = passwordField.value,
             onValueChange = { newValue ->
+                errorMessage = null
                 passwordField = passwordField.copy(value = newValue, error = "", isValid = true)
             },
             label = { Text("Contraseña", color = LifePillColors.OnSurfaceVariant) },
@@ -267,7 +333,9 @@ fun LoginContent(
                 text = passwordField.error,
                 color = LifePillColors.Error,
                 fontSize = 12.sp,
-                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, top = 4.dp)
             )
         }
 
@@ -290,12 +358,11 @@ fun LoginContent(
 
                 if (emailValidation.isValid && passwordValidation.isValid) {
                     isLoading = true
-                    val userType = if (emailField.value == "admin.gmail.com" && passwordField.value == "admin123") {
-                        "admin"
-                    } else {
-                        emailField.value
-                    }
-                    onLoginSuccess(userType)
+                    errorMessage = null
+                    authViewModel.login(
+                        correo = emailField.value,
+                        contraseña = passwordField.value
+                    )
                 }
             },
             enabled = !isLoading && emailField.value.isNotEmpty() && passwordField.value.isNotEmpty(),
@@ -303,6 +370,7 @@ fun LoginContent(
                 .fillMaxWidth()
                 .height(50.dp)
         )
+
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
@@ -376,7 +444,7 @@ private fun OnBoardingStyleButton(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateAccountContent() {
+fun CreateAccountContent(authViewModel: AuthViewModel) {
     var currentStep by remember { mutableStateOf(0) }
     val scrollState = rememberScrollState()
     var documentType by remember { mutableStateOf("CC") }
@@ -394,7 +462,43 @@ fun CreateAccountContent() {
     var weight by remember { mutableStateOf("") }
     var height by remember { mutableStateOf("") }
     var selectedWorkMode by remember { mutableStateOf("") }
-    var showDatePicker by remember { mutableStateOf(false) }
+    var isCreatingAccount by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var showSuccessDialog by remember { mutableStateOf(false) }
+
+    val authResult by authViewModel.authResult.observeAsState()
+    val error by authViewModel.error.observeAsState()
+
+    LaunchedEffect(authResult) {
+        authResult?.let { response ->
+            isCreatingAccount = false
+            if (response.success) {
+                showSuccessDialog = true
+            } else {
+                errorMessage = response.message ?: "Error al crear la cuenta"
+            }
+        }
+    }
+
+    LaunchedEffect(error) {
+        error?.let {
+            isCreatingAccount = false
+            errorMessage = it
+        }
+    }
+
+    if (showSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = { showSuccessDialog = false },
+            title = { Text("¡Cuenta creada!") },
+            text = { Text("Tu cuenta ha sido creada exitosamente. Ahora puedes iniciar sesión.") },
+            confirmButton = {
+                TextButton(onClick = { showSuccessDialog = false }) {
+                    Text("Aceptar")
+                }
+            }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -402,6 +506,38 @@ fun CreateAccountContent() {
             .verticalScroll(scrollState),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        errorMessage?.let { msg ->
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = LifePillColors.Error.copy(alpha = 0.1f)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .padding(12.dp)
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = LifePillColors.Error,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = msg,
+                        color = LifePillColors.Error,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+        }
+
         StepProgressIndicator(
             currentStep = currentStep,
             totalSteps = 4,
@@ -454,9 +590,47 @@ fun CreateAccountContent() {
         NavigationButtons(
             currentStep = currentStep,
             totalSteps = 4,
+            isLoading = isCreatingAccount,
             onPrevious = { if (currentStep > 0) currentStep-- },
             onNext = { if (currentStep < 3) currentStep++ },
-            onFinish = { }
+            onFinish = {
+                val isValid = documentNumber.isValid && documentNumber.value.isNotEmpty() &&
+                        firstName.isValid && firstName.value.isNotEmpty() &&
+                        lastName.isValid && lastName.value.isNotEmpty() &&
+                        username.isValid && username.value.isNotEmpty() &&
+                        birthDate.isNotEmpty() &&
+                        selectedGender.isNotEmpty() &&
+                        phone.isValid && phone.value.isNotEmpty() &&
+                        email.isValid && email.value.isNotEmpty() &&
+                        password.isValid && password.value.isNotEmpty()
+
+                if (isValid) {
+                    isCreatingAccount = true
+                    errorMessage = null
+
+                    val registerRequest = RegisterRequest(
+                        documentType = documentType,
+                        documentNumber = documentNumber.value,
+                        firstName = firstName.value,
+                        lastName = lastName.value,
+                        username = username.value,
+                        birthDate = birthDate,
+                        gender = selectedGender,
+                        phone = phone.value,
+                        address = address,
+                        email = email.value,
+                        password = password.value,
+                        age = age.ifEmpty { "0" },
+                        weight = weight.ifEmpty { "0" },
+                        height = height.ifEmpty { "0" },
+                        workMode = selectedWorkMode.ifEmpty { "No especificado" }
+                    )
+
+                    authViewModel.register(registerRequest)
+                } else {
+                    errorMessage = "Por favor completa todos los campos obligatorios"
+                }
+            }
         )
     }
 }
@@ -491,8 +665,6 @@ private fun DocumentInfoStep(
     documentNumber: FormField,
     onDocumentNumberChange: (FormField) -> Unit
 ) {
-    val documentTypes = listOf("CC", "TI", "CE", "Pasaporte")
-
     Column {
         SectionTitle("Información de Documento")
         Spacer(modifier = Modifier.height(16.dp))
@@ -685,6 +857,8 @@ private fun ContactInfoStep(
     password: FormField,
     onPasswordChange: (FormField) -> Unit,
 ) {
+    var passwordVisible by remember { mutableStateOf(false) }
+
     Column {
         SectionTitle("Información de Contacto")
         Spacer(modifier = Modifier.height(16.dp))
@@ -714,7 +888,6 @@ private fun ContactInfoStep(
                 errorTextColor = LifePillColors.OnSurface
             )
         )
-
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -765,8 +938,6 @@ private fun ContactInfoStep(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        var passwordVisible by remember { mutableStateOf(false) }
-
         OutlinedTextField(
             value = password.value,
             onValueChange = { value ->
@@ -777,7 +948,6 @@ private fun ContactInfoStep(
             leadingIcon = { Icon(Icons.Default.Lock, "Contraseña", tint = LifePillColors.Primary) },
             trailingIcon = {
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
-
                 }
             },
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -977,6 +1147,7 @@ private fun WorkModeButton(
 private fun NavigationButtons(
     currentStep: Int,
     totalSteps: Int,
+    isLoading: Boolean = false,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     onFinish: () -> Unit
@@ -989,6 +1160,7 @@ private fun NavigationButtons(
             OutlinedButton(
                 onClick = onPrevious,
                 modifier = Modifier.height(56.dp),
+                enabled = !isLoading,
                 shape = RoundedCornerShape(28.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = LifePillColors.Primary
@@ -1004,8 +1176,13 @@ private fun NavigationButtons(
         }
 
         OnBoardingStyleButton(
-            text = if (currentStep == totalSteps - 1) "Crear Cuenta" else "Siguiente",
+            text = when {
+                isLoading -> "Creando cuenta..."
+                currentStep == totalSteps - 1 -> "Crear Cuenta"
+                else -> "Siguiente"
+            },
             onClick = if (currentStep == totalSteps - 1) onFinish else onNext,
+            enabled = !isLoading,
             modifier = if (currentStep == 0) Modifier else Modifier.weight(1f).padding(start = 16.dp)
         )
     }
@@ -1188,13 +1365,5 @@ private fun validateHeight(height: String): ValidationResult {
         height.toIntOrNull() == null -> ValidationResult(false, "Solo números")
         height.toInt() < 50 || height.toInt() > 250 -> ValidationResult(false, "Altura inválida")
         else -> ValidationResult(true)
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun LoginScreenPreview() {
-    LifePillTheme {
-        LoginScreens()
     }
 }
