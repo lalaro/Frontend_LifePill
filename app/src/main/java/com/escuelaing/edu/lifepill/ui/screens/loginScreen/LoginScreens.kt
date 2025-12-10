@@ -183,11 +183,12 @@ fun LoginContent(
     val error by authViewModel.error.observeAsState()
 
     // Manejar respuestas del servidor
-    LaunchedEffect(authResult) {
+    LaunchedEffect(key1 = authResult) {
         authResult?.let { response ->
             isLoading = false
-            if (response.success && response.role != null) {
-                onLoginSuccess(response.role)
+            if (response.success) {
+                val role = response.role ?: "user"  // Default a "user" si es null
+                onLoginSuccess(role)
             } else {
                 errorMessage = response.message ?: "Error al iniciar sesión"
             }
