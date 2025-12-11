@@ -26,6 +26,7 @@ import com.escuelaing.edu.lifepill.auth.FoodViewModel
 @Composable
 fun FoodRegisterScreen(
     token: String,
+    foodViewModel: FoodViewModel = viewModel(),
     onBack: () -> Unit = {},
     onNavigateToHome: () -> Unit = {},
     onNavigateToRegister: () -> Unit = {},
@@ -61,16 +62,16 @@ fun FoodRegisterScreen(
     }
 
     val foodDatabase = listOf(
-        FoodItem("Manzana", "52", "desayuno"),
-        FoodItem("Ensalada César", "184", "almuerzo"),
-        FoodItem("Pollo a la plancha", "165", "almuerzo"),
-        FoodItem("Arroz blanco", "130", "almuerzo"),
-        FoodItem("Brócoli", "34", "cena"),
-        FoodItem("Salmón", "208", "cena"),
-        FoodItem("Avena", "389", "desayuno"),
-        FoodItem("Leche", "61", "desayuno"),
-        FoodItem("Pan integral", "218", "desayuno"),
-        FoodItem("Huevo cocido", "155", "desayuno")
+        FoodItem("Manzana", "52", "desayuno", "0.3g", "14g", "0.2g"),
+        FoodItem("Ensalada César", "184", "almuerzo", "8g", "12g", "14g"),
+        FoodItem("Pollo a la plancha", "165", "almuerzo", "31g", "0g", "3.6g"),
+        FoodItem("Arroz blanco", "130", "almuerzo", "2.7g", "28g", "0.3g"),
+        FoodItem("Brócoli", "34", "cena", "2.8g", "7g", "0.4g"),
+        FoodItem("Salmón", "208", "cena", "20g", "0g", "13g"),
+        FoodItem("Avena", "389", "desayuno", "17g", "66g", "7g"),
+        FoodItem("Leche", "61", "desayuno", "3.2g", "4.8g", "3.3g"),
+        FoodItem("Pan integral", "218", "desayuno", "9g", "41g", "3g"),
+        FoodItem("Huevo cocido", "155", "desayuno", "13g", "1.1g", "11g")
     )
 
     val filteredFoods = if (searchText.isBlank()) {
@@ -307,11 +308,16 @@ fun FoodRegisterScreen(
                                         fontSize = 14.sp,
                                         color = LifePillColors.OnSurfaceVariant
                                     )
+                                    Text(
+                                        text = "P: ${food.protein} | C: ${food.carbs} | G: ${food.fats}",
+                                        fontSize = 12.sp,
+                                        color = LifePillColors.OnSurfaceVariant
+                                    )
                                 }
 
                                 TextButton(
                                     onClick = {
-                                        selectedFoods = selectedFoods + food
+                                        selectedFoods = selectedFoods + food.copy()
                                     }
                                 ) {
                                     Text(
@@ -372,57 +378,137 @@ fun FoodRegisterScreen(
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
-                                        text = "${food.calories} cal",
+                                        text = "${(food.calories.toIntOrNull() ?: 0) * food.quantity} cal (${food.quantity}x)",
                                         fontSize = 14.sp,
                                         color = LifePillColors.OnSurfaceVariant
                                     )
                                 }
 
-                                IconButton(
-                                    onClick = {
-                                        selectedFoods = selectedFoods.toMutableList().apply {
-                                            removeAt(index)
-                                        }
-                                    }
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Delete,
-                                        contentDescription = "Eliminar",
-                                        tint = Color(0xFFD32F2F),
-                                        modifier = Modifier.size(24.dp)
+                                    IconButton(
+                                        onClick = {
+                                            selectedFoods = selectedFoods.toMutableList().apply {
+                                                if (get(index).quantity > 1) {
+                                                    set(index, get(index).copy(quantity = get(index).quantity - 1))
+                                                }
+                                            }
+                                        },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                    }
+
+                                    Text(
+                                        text = "${food.quantity}",
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = LifePillColors.OnSurface,
+                                        modifier = Modifier.padding(horizontal = 4.dp)
                                     )
+
+                                    IconButton(
+                                        onClick = {
+                                            selectedFoods = selectedFoods.toMutableList().apply {
+                                                set(index, get(index).copy(quantity = get(index).quantity + 1))
+                                            }
+                                        },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Add,
+                                            contentDescription = "Aumentar",
+                                            tint = LifePillColors.Primary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+
+                                    IconButton(
+                                        onClick = {
+                                            selectedFoods = selectedFoods.toMutableList().apply {
+                                                removeAt(index)
+                                            }
+                                        }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Eliminar",
+                                            tint = Color(0xFFD32F2F),
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
                 }
 
-                val totalCalorias = selectedFoods.sumOf { it.calories.toIntOrNull() ?: 0 }
+                val totalCalorias = selectedFoods.sumOf {
+                    (it.calories.toIntOrNull() ?: 0) * it.quantity
+                }
 
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = LifePillColors.Primary.copy(alpha = 0.2f)
+                        containerColor = when {
+                            totalCalorias > 2000 -> Color(0xFFFFEBEE)
+                            totalCalorias > 1500 -> Color(0xFFFFF3E0)
+                            else -> LifePillColors.Primary.copy(alpha = 0.2f)
+                        }
                     )
                 ) {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                            .padding(16.dp)
                     ) {
-                        Text(
-                            text = "Total de calorías:",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = LifePillColors.OnSurface
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Total de calorías:",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = LifePillColors.OnSurface
+                            )
+                            Text(
+                                text = "$totalCalorias cal",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = when {
+                                    totalCalorias > 2000 -> Color(0xFFD32F2F)
+                                    totalCalorias > 1500 -> Color(0xFFFF6F00)
+                                    else -> LifePillColors.Primary
+                                }
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        LinearProgressIndicator(
+                            progress = { (totalCalorias.toFloat() / 2000f).coerceIn(0f, 1f) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(8.dp),
+                            color = when {
+                                totalCalorias > 2000 -> Color(0xFFD32F2F)
+                                totalCalorias > 1500 -> Color(0xFFFF6F00)
+                                else -> LifePillColors.Primary
+                            },
+                            trackColor = LifePillColors.OnSurfaceVariant.copy(alpha = 0.2f),
                         )
+
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "$totalCalorias cal",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = LifePillColors.Primary
+                            text = when {
+                                totalCalorias > 2000 -> "⚠️ Excede la recomendación diaria"
+                                totalCalorias > 1500 -> "⚡ Acercándose al límite"
+                                else -> "✓ Dentro del rango saludable"
+                            },
+                            fontSize = 12.sp,
+                            color = LifePillColors.OnSurfaceVariant
                         )
                     }
                 }
@@ -432,7 +518,9 @@ fun FoodRegisterScreen(
                 Button(
                     onClick = {
                         isLoading = true
-                        val descripcion = selectedFoods.joinToString(", ") { it.name }
+                        val descripcion = selectedFoods.joinToString(", ") {
+                            "${it.name} (${it.quantity}x)"
+                        }
                         viewModel.createFood(
                             token = token,
                             tipo = selectedMealType,
@@ -630,5 +718,9 @@ private fun PhotoVoiceDialog(
 data class FoodItem(
     val name: String,
     val calories: String,
-    val mealType: String
+    val mealType: String,
+    val protein: String = "0g",
+    val carbs: String = "0g",
+    val fats: String = "0g",
+    var quantity: Int = 1
 )

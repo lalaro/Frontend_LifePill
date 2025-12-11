@@ -7,10 +7,10 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
     // Microservicio de Autenticación (puerto 3000)
-    private const val AUTH_BASE_URL = "http://10.0.2.2:8086/"
+    private const val AUTH_BASE_URL = "http://44.210.0.255:8086/"
 
     // Microservicio de Comidas (puerto 8087)
-    private const val FOOD_BASE_URL = "http://10.0.2.2:8087/"
+    private const val FOOD_BASE_URL = "http://54.156.203.198:8087/"
 
     private val logging = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY

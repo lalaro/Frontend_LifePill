@@ -9,10 +9,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.escuelaing.edu.lifepill.auth.AuthViewModel
+import com.escuelaing.edu.lifepill.auth.FoodViewModel
 import com.escuelaing.edu.lifepill.ui.theme.LifePillTheme
 import com.escuelaing.edu.lifepill.ui.screens.OnBoardingScreen
 import com.escuelaing.edu.lifepill.ui.screens.loginScreen.LoginScreens
@@ -29,6 +31,7 @@ import com.escuelaing.edu.lifepill.ui.screens.homeScreen.UserHomeScreen.UserProf
 
 class MainActivity : ComponentActivity() {
     private val authViewModel: AuthViewModel by viewModels()
+    private val foodViewModel: FoodViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,7 +41,10 @@ class MainActivity : ComponentActivity() {
                 Surface(
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    AppNavigation(authViewModel = authViewModel)
+                    AppNavigation(
+                        authViewModel = authViewModel,
+                        foodViewModel = foodViewModel
+                    )
                 }
             }
         }
@@ -46,7 +52,10 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun AppNavigation(authViewModel: AuthViewModel) {
+fun AppNavigation(
+    authViewModel: AuthViewModel,
+    foodViewModel: FoodViewModel
+) {
     val navController = rememberNavController()
 
     // Observar el token del AuthViewModel
@@ -99,6 +108,8 @@ fun AppNavigation(authViewModel: AuthViewModel) {
 
         composable("user_home") {
             UserHomeScreen(
+                token = token, // ✅ Pasar el token
+                foodViewModel = foodViewModel, // ✅ Pasar el ViewModel compartido
                 onLogout = {
                     navController.navigate("login") {
                         popUpTo("user_home") { inclusive = true }
@@ -118,7 +129,8 @@ fun AppNavigation(authViewModel: AuthViewModel) {
 
         composable("food_register") {
             FoodRegisterScreen(
-                token = token, // ✅ Pasar el token aquí
+                token = token, // ✅ Pasar el token
+                foodViewModel = foodViewModel, // ✅ Usar el mismo ViewModel
                 onBack = {
                     navController.popBackStack()
                 },

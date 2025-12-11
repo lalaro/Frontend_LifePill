@@ -127,4 +127,10 @@ class FoodViewModel(application: Application) : AndroidViewModel(application) {
     fun clearError() {
         error.value = null
     }
+
+    // 📊 Calcular calorías totales del día
+    fun calculateTodayCalories(): Int {
+        val foods = foodsList.value ?: return 0
+        return foods.sumOf { it.calorias }
+    }
 }
