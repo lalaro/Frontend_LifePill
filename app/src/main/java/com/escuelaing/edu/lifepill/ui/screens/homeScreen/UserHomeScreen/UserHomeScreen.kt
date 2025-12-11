@@ -32,11 +32,6 @@ fun UserHomeScreen(
     onAddText: (String, String) -> Unit = { _, _ -> }
 ) {
     val scrollState = rememberScrollState()
-    var showAddMealDialog by remember { mutableStateOf(false) }
-    var selectedMeal by remember { mutableStateOf("") }
-    var desayuno by remember { mutableStateOf("Avena con frutas") }
-    var almuerzo by remember { mutableStateOf<String?>(null) }
-    var cena by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
         topBar = {
@@ -146,6 +141,7 @@ fun UserHomeScreen(
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Card de Resumen del Día
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -183,30 +179,8 @@ fun UserHomeScreen(
                     )
                 }
             }
-            MealCard(
-                mealName = "Desayuno",
-                foodItem = desayuno,
-                onAddClick = {
-                    selectedMeal = "Desayuno"
-                    showAddMealDialog = true
-                }
-            )
-            MealCard(
-                mealName = "Almuerzo",
-                foodItem = almuerzo,
-                onAddClick = {
-                    selectedMeal = "Almuerzo"
-                    showAddMealDialog = true
-                }
-            )
-            MealCard(
-                mealName = "Cena",
-                foodItem = cena,
-                onAddClick = {
-                    selectedMeal = "Cena"
-                    showAddMealDialog = true
-                }
-            )
+
+            // Card de Sugerencia IA
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -234,7 +208,7 @@ fun UserHomeScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Basado en tu desayuno, te recomiendo una ensalada con pollo para el almuerzo.",
+                            text = "Basado en tus objetivos, te recomendamos mantener una dieta balanceada con proteínas, carbohidratos complejos y grasas saludables.",
                             fontSize = 14.sp,
                             color = LifePillColors.OnSurfaceVariant,
                             lineHeight = 20.sp
@@ -245,213 +219,7 @@ fun UserHomeScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
         }
-        if (showAddMealDialog) {
-            AddMealDialog(
-                mealName = selectedMeal,
-                onDismiss = { showAddMealDialog = false },
-                onTakePhoto = {
-                    showAddMealDialog = false
-                    onTakePhoto(selectedMeal)
-                },
-                onAddText = { text ->
-                    when (selectedMeal) {
-                        "Desayuno" -> desayuno = text
-                        "Almuerzo" -> almuerzo = text
-                        "Cena" -> cena = text
-                    }
-                    showAddMealDialog = false
-                    onAddText(selectedMeal, text)
-                }
-            )
-        }
     }
-}
-
-@Composable
-private fun MealCard(
-    mealName: String,
-    foodItem: String?,
-    onAddClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = LifePillColors.Surface
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp)
-        ) {
-            Text(
-                text = mealName,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = LifePillColors.OnSurface
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = LifePillColors.Background
-                )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = foodItem ?: "No registrado",
-                        fontSize = 14.sp,
-                        color = LifePillColors.OnSurface
-                    )
-                    TextButton(onClick = onAddClick) {
-                        Text(
-                            text = "+ Agregar",
-                            color = LifePillColors.Primary,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun AddMealDialog(
-    mealName: String,
-    onDismiss: () -> Unit,
-    onTakePhoto: () -> Unit,
-    onAddText: (String) -> Unit
-) {
-    var textInput by remember { mutableStateOf("") }
-    var showTextInput by remember { mutableStateOf(false) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = "Agregar $mealName",
-                fontWeight = FontWeight.Bold,
-                color = LifePillColors.OnSurface
-            )
-        },
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                if (!showTextInput) {
-                    Text(
-                        text = "¿Cómo quieres agregar tu comida?",
-                        fontSize = 14.sp,
-                        color = LifePillColors.OnSurfaceVariant
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    OutlinedButton(
-                        onClick = onTakePhoto,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = LifePillColors.Primary
-                        ),
-                        border = BorderStroke(2.dp, LifePillColors.Primary)
-                    ) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Tomar Foto",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-
-                    OutlinedButton(
-                        onClick = { showTextInput = true },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = LifePillColors.Primary
-                        ),
-                        border = BorderStroke(2.dp, LifePillColors.Primary)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Texto",
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Escribir",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                } else {
-                    Text(
-                        text = "Escribe qué comiste:",
-                        fontSize = 14.sp,
-                        color = LifePillColors.OnSurfaceVariant
-                    )
-
-                    OutlinedTextField(
-                        value = textInput,
-                        onValueChange = { textInput = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Ej: Ensalada César") },
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = LifePillColors.Surface,
-                            unfocusedContainerColor = LifePillColors.Surface,
-                            focusedBorderColor = LifePillColors.Primary,
-                            unfocusedBorderColor = LifePillColors.OnSurfaceVariant,
-                            focusedTextColor = LifePillColors.OnSurface,
-                            unfocusedTextColor = LifePillColors.OnSurface
-                        )
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            if (showTextInput) {
-                Button(
-                    onClick = {
-                        if (textInput.isNotBlank()) {
-                            onAddText(textInput)
-                        }
-                    },
-                    enabled = textInput.isNotBlank(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = LifePillColors.Primary
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text("Guardar")
-                }
-            }
-        },
-        dismissButton = {
-            TextButton(
-                onClick = onDismiss,
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = LifePillColors.OnSurfaceVariant
-                )
-            ) {
-                Text("Cancelar")
-            }
-        },
-        containerColor = LifePillColors.Background,
-        shape = RoundedCornerShape(16.dp)
-    )
 }
 
 @Preview(showBackground = true)

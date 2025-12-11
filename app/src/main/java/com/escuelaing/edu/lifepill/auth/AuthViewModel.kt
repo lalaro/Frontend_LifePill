@@ -3,6 +3,7 @@ package com.escuelaing.edu.lifepill.auth
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.escuelaing.edu.lifepill.network.AuthResponse
@@ -16,6 +17,9 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     private val repo = AuthRepository(RetrofitClient.authApi)
     val authResult = MutableLiveData<AuthResponse?>()
     val error = MutableLiveData<String?>()
+
+    private val _token = MutableLiveData<String>()
+    val token: LiveData<String> = _token
 
     companion object {
         private const val TAG = "AuthViewModel"
@@ -40,9 +44,16 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 Log.d(TAG, "✅ Message: ${body?.message}")
                 Log.d(TAG, "✅ Token: ${body?.token?.take(20)}...")
 
+                // 🔑 GUARDAR EL TOKEN AUTOMÁTICAMENTE
+                if (body?.token != null) {
+                    Log.d(TAG, "💾 Guardando token en LiveData...")
+                    _token.postValue(body.token)
+                } else {
+                    Log.e(TAG, "⚠️ Token es NULL en la respuesta")
+                }
+
                 authResult.postValue(body)
             } else {
-                // Intentar leer el error del body
                 val errorBody = response.errorBody()?.string()
                 val errorMsg = if (errorBody != null) {
                     "Error: $errorBody"
@@ -73,6 +84,12 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 Log.d(TAG, "✅ Success: ${body?.success}")
                 Log.d(TAG, "✅ Message: ${body?.message}")
 
+                // 🔑 GUARDAR EL TOKEN SI VIENE EN EL REGISTRO
+                if (body?.token != null) {
+                    Log.d(TAG, "💾 Guardando token en LiveData después del registro...")
+                    _token.postValue(body.token)
+                }
+
                 authResult.postValue(body)
             } else {
                 val errorMsg = "Error ${response.code()}: ${response.message()}"
@@ -83,5 +100,10 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
             Log.e(TAG, "💥 Excepción en registro: ${e.message}", e)
             error.postValue(e.message)
         }
+    }
+
+    // Esta función ya no es necesaria llamarla manualmente
+    fun onLoginSuccess(tokenValue: String) {
+        _token.value = tokenValue
     }
 }

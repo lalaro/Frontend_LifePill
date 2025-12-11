@@ -8,6 +8,7 @@ import androidx.activity.viewModels
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -47,6 +48,10 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation(authViewModel: AuthViewModel) {
     val navController = rememberNavController()
+
+    // Observar el token del AuthViewModel
+    val token = authViewModel.token.observeAsState().value ?: ""
+
     NavHost(navController = navController, startDestination = "onboarding") {
         composable("onboarding") {
             OnBoardingScreen(
@@ -113,6 +118,7 @@ fun AppNavigation(authViewModel: AuthViewModel) {
 
         composable("food_register") {
             FoodRegisterScreen(
+                token = token, // ✅ Pasar el token aquí
                 onBack = {
                     navController.popBackStack()
                 },
@@ -128,9 +134,6 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                 },
                 onNavigateToProfile = {
                     navController.navigate("user_profile")
-                },
-                onSaveFood = { foods ->
-                    println("Foods saved: $foods")
                 }
             )
         }

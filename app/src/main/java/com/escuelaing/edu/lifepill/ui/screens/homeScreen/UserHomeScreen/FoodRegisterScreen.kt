@@ -1,5 +1,6 @@
 package com.escuelaing.edu.lifepill.ui.screens.homeScreen.UserHomeScreen
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -9,46 +10,69 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.escuelaing.edu.lifepill.ui.screens.loginScreen.LifePillColors
-import com.escuelaing.edu.lifepill.ui.theme.LifePillTheme
+import com.escuelaing.edu.lifepill.auth.FoodViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FoodRegisterScreen(
+    token: String,
     onBack: () -> Unit = {},
     onNavigateToHome: () -> Unit = {},
     onNavigateToRegister: () -> Unit = {},
     onNavigateToAssistant: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
-    onSaveFood: (String) -> Unit = {}
+    viewModel: FoodViewModel = viewModel()
 ) {
+    val context = LocalContext.current
     val scrollState = rememberScrollState()
+
     var showPhotoVoiceDialog by remember { mutableStateOf(false) }
     var selectedFoods by remember { mutableStateOf<List<FoodItem>>(emptyList()) }
     var searchText by remember { mutableStateOf("") }
+    var selectedMealType by remember { mutableStateOf("desayuno") }
+    var isLoading by remember { mutableStateOf(false) }
 
-    // Base de datos de alimentos con calorías
+    val foodResult by viewModel.foodResult.observeAsState()
+    val error by viewModel.error.observeAsState()
+
+    LaunchedEffect(foodResult) {
+        foodResult?.let {
+            Toast.makeText(context, "✅ Comida guardada: ${it.tipo}", Toast.LENGTH_SHORT).show()
+            selectedFoods = emptyList()
+            isLoading = false
+        }
+    }
+
+    LaunchedEffect(error) {
+        error?.let {
+            Toast.makeText(context, "❌ Error: $it", Toast.LENGTH_LONG).show()
+            isLoading = false
+        }
+    }
+
     val foodDatabase = listOf(
-        FoodItem("Manzana", "52 cal por 100g"),
-        FoodItem("Ensalada César", "184 cal por porción"),
-        FoodItem("Pollo a la plancha", "165 cal por 100g"),
-        FoodItem("Arroz blanco", "130 cal por 100g"),
-        FoodItem("Brócoli", "34 cal por 100g"),
-        FoodItem("Salmón", "208 cal por 100g"),
-        FoodItem("Avena", "389 cal por 100g"),
-        FoodItem("Leche", "61 cal por 100ml"),
-        FoodItem("Pan integral", "218 cal por 100g"),
-        FoodItem("Huevo cocido", "155 cal por 100g")
+        FoodItem("Manzana", "52", "desayuno"),
+        FoodItem("Ensalada César", "184", "almuerzo"),
+        FoodItem("Pollo a la plancha", "165", "almuerzo"),
+        FoodItem("Arroz blanco", "130", "almuerzo"),
+        FoodItem("Brócoli", "34", "cena"),
+        FoodItem("Salmón", "208", "cena"),
+        FoodItem("Avena", "389", "desayuno"),
+        FoodItem("Leche", "61", "desayuno"),
+        FoodItem("Pan integral", "218", "desayuno"),
+        FoodItem("Huevo cocido", "155", "desayuno")
     )
 
-    // Filtrar alimentos según búsqueda
     val filteredFoods = if (searchText.isBlank()) {
         foodDatabase
     } else {
@@ -154,30 +178,50 @@ fun FoodRegisterScreen(
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Botón Agregar Comida
-            OutlinedButton(
-                onClick = { showPhotoVoiceDialog = true },
+            Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = LifePillColors.Primary
-                ),
-                border = BorderStroke(2.dp, LifePillColors.Primary)
+                colors = CardDefaults.cardColors(
+                    containerColor = LifePillColors.Surface
+                )
             ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Agregar",
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Agregar Comida",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "Tipo de comida",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = LifePillColors.OnSurface
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf("desayuno", "almuerzo", "cena", "otro").forEach { tipo ->
+                            FilterChip(
+                                selected = selectedMealType == tipo,
+                                onClick = { selectedMealType = tipo },
+                                label = {
+                                    Text(
+                                        tipo.replaceFirstChar { it.uppercase() },
+                                        fontSize = 14.sp
+                                    )
+                                },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = LifePillColors.Primary,
+                                    selectedLabelColor = Color.White,
+                                    containerColor = LifePillColors.Surface,
+                                    labelColor = LifePillColors.OnSurface
+                                )
+                            )
+                        }
+                    }
+                }
             }
 
-            // Campo de búsqueda
             OutlinedTextField(
                 value = searchText,
                 onValueChange = { searchText = it },
@@ -215,7 +259,6 @@ fun FoodRegisterScreen(
                 singleLine = true
             )
 
-            // Título de resultados
             Text(
                 text = "Resultados de búsqueda: ${filteredFoods.size}",
                 fontSize = 16.sp,
@@ -223,7 +266,6 @@ fun FoodRegisterScreen(
                 color = LifePillColors.OnSurface
             )
 
-            // Lista de alimentos disponibles (filtrada)
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -261,7 +303,7 @@ fun FoodRegisterScreen(
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
-                                        text = food.calories,
+                                        text = "${food.calories} cal",
                                         fontSize = 14.sp,
                                         color = LifePillColors.OnSurfaceVariant
                                     )
@@ -270,7 +312,6 @@ fun FoodRegisterScreen(
                                 TextButton(
                                     onClick = {
                                         selectedFoods = selectedFoods + food
-                                        onSaveFood("${food.name} - ${food.calories}")
                                     }
                                 ) {
                                     Text(
@@ -289,7 +330,7 @@ fun FoodRegisterScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             if (selectedFoods.isNotEmpty()) {
-                Divider(
+                HorizontalDivider(
                     color = LifePillColors.OnSurfaceVariant.copy(alpha = 0.2f),
                     thickness = 1.dp
                 )
@@ -331,7 +372,7 @@ fun FoodRegisterScreen(
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
-                                        text = food.calories,
+                                        text = "${food.calories} cal",
                                         fontSize = 14.sp,
                                         color = LifePillColors.OnSurfaceVariant
                                     )
@@ -356,13 +397,48 @@ fun FoodRegisterScreen(
                     }
                 }
 
+                val totalCalorias = selectedFoods.sumOf { it.calories.toIntOrNull() ?: 0 }
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = LifePillColors.Primary.copy(alpha = 0.2f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Total de calorías:",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = LifePillColors.OnSurface
+                        )
+                        Text(
+                            text = "$totalCalorias cal",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = LifePillColors.Primary
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Botón Guardar Registro
                 Button(
                     onClick = {
-                        selectedFoods = emptyList()
-                        searchText = ""
+                        isLoading = true
+                        val descripcion = selectedFoods.joinToString(", ") { it.name }
+                        viewModel.createFood(
+                            token = token,
+                            tipo = selectedMealType,
+                            calorias = totalCalorias,
+                            descripcion = descripcion
+                        )
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -375,13 +451,21 @@ fun FoodRegisterScreen(
                     elevation = ButtonDefaults.buttonElevation(
                         defaultElevation = 4.dp,
                         pressedElevation = 8.dp
-                    )
+                    ),
+                    enabled = !isLoading
                 ) {
-                    Text(
-                        text = "Guardar Registro",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = Color.White
+                        )
+                    } else {
+                        Text(
+                            text = "Guardar Registro",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
             }
 
@@ -545,13 +629,6 @@ private fun PhotoVoiceDialog(
 
 data class FoodItem(
     val name: String,
-    val calories: String
+    val calories: String,
+    val mealType: String
 )
-
-@Preview(showBackground = true)
-@Composable
-fun FoodRegisterScreenPreview() {
-    LifePillTheme {
-        FoodRegisterScreen()
-    }
-}

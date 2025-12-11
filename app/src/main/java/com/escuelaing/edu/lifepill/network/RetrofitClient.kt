@@ -6,15 +6,35 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
-    private const val BASE_URL = "http://10.0.2.2:3000/" // emulador Android => 10.0.2.2
-    private val logging = HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }
-    private val client = OkHttpClient.Builder().addInterceptor(logging).build()
+    // Microservicio de Autenticación (puerto 3000)
+    private const val AUTH_BASE_URL = "http://10.0.2.2:8086/"
 
-    private val retrofit: Retrofit = Retrofit.Builder()
-        .baseUrl(BASE_URL)
+    // Microservicio de Comidas (puerto 8087)
+    private const val FOOD_BASE_URL = "http://10.0.2.2:8087/"
+
+    private val logging = HttpLoggingInterceptor().apply {
+        level = HttpLoggingInterceptor.Level.BODY
+    }
+
+    private val client = OkHttpClient.Builder()
+        .addInterceptor(logging)
+        .build()
+
+    // Retrofit para el microservicio de autenticación
+    private val authRetrofit: Retrofit = Retrofit.Builder()
+        .baseUrl(AUTH_BASE_URL)
         .client(client)
         .addConverterFactory(GsonConverterFactory.create())
         .build()
 
-    val authApi: AuthApi = retrofit.create(AuthApi::class.java)
+    // Retrofit para el microservicio de comidas
+    private val foodRetrofit: Retrofit = Retrofit.Builder()
+        .baseUrl(FOOD_BASE_URL)
+        .client(client)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+    // APIs
+    val authApi: AuthApi = authRetrofit.create(AuthApi::class.java)
+    val foodApi: FoodApi = foodRetrofit.create(FoodApi::class.java)
 }
