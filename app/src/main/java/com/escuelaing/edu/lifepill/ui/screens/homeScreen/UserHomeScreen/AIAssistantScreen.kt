@@ -21,6 +21,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.escuelaing.edu.lifepill.ui.screens.loginScreen.LifePillColors
 import com.escuelaing.edu.lifepill.ui.theme.LifePillTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
+import java.io.IOException
 
 data class ChatMessage(
     val id: String = "",
@@ -42,6 +50,7 @@ fun AIAssistantScreen(
     var messages by remember { mutableStateOf<List<ChatMessage>>(emptyList()) }
     var inputText by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     // Initial AI greeting
     LaunchedEffect(Unit) {
@@ -257,24 +266,33 @@ fun AIAssistantScreen(
                     Button(
                         onClick = {
                             if (inputText.isNotBlank()) {
+                                val userMessage = inputText
                                 messages = messages + ChatMessage(
                                     id = "user_${System.currentTimeMillis()}",
-                                    content = inputText,
+                                    content = userMessage,
                                     isUser = true
                                 )
                                 inputText = ""
                                 isLoading = true
 
-                                // Simulate AI response delay
-                                Thread {
-                                    Thread.sleep(1500)
-                                    messages = messages + ChatMessage(
-                                        id = "ai_${System.currentTimeMillis()}",
-                                        content = generateAIResponse(messages),
-                                        isUser = false
-                                    )
-                                    isLoading = false
-                                }.start()
+                                scope.launch {
+                                    try {
+                                        val response = getChatGPTResponse(userMessage)
+                                        messages = messages + ChatMessage(
+                                            id = "ai_${System.currentTimeMillis()}",
+                                            content = response,
+                                            isUser = false
+                                        )
+                                    } catch (e: Exception) {
+                                        messages = messages + ChatMessage(
+                                            id = "error_${System.currentTimeMillis()}",
+                                            content = "Lo siento, hubo un error al procesar tu solicitud. Por favor intenta de nuevo.",
+                                            isUser = false
+                                        )
+                                    } finally {
+                                        isLoading = false
+                                    }
+                                }
                             }
                         },
                         modifier = Modifier
@@ -332,30 +350,34 @@ private fun ChatMessageBubble(message: ChatMessage) {
     }
 }
 
-private fun generateAIResponse(messages: List<ChatMessage>): String {
-    val responses = listOf(
-        "Basándome en tu registro nutricional diario, te recomiendo aumentar tu ingesta de agua.",
-        "¡Excelente opción! Considera agregar más vegetales para equilibrar tus comidas.",
-        "Noté que tuviste un buen desayuno. Para el almuerzo, te sugiero una combinación balanceada de proteína y vegetales.",
-        "Tu ingesta de calorías se ve balanceada hoy. ¡Sigue adelante!",
-        "¿Te gustaría algunas recomendaciones para snacks saludables?",
-        "Agregar más granos integrales a tu dieta puede mejorar tu balance nutricional.",
-        "Esa combinación de alimentos se ve nutritivamente balanceada. ¡Excelente elección!",
-        "Te recomiendo rastrear tus porciones para asegurar una nutrición óptima.",
-        "Veo que has estado comiendo bien. Mantén estos hábitos saludables.",
-        "¿Necesitas consejos sobre cómo preparar comidas más saludables?",
-        "Recuerda mantenerte hidratado durante todo el día.",
-        "Las proteínas son importantes para tu cuerpo. ¿Las incluiste hoy?",
-        "Una buena estrategia es hacer 5 comidas pequeñas durante el día.",
-        "Los alimentos ricos en fibra te ayudarán a sentirte más satisfecho.",
-        "Intenta comer despacio y masticar bien para mejor digestión.",
-        "¿Has considerado añadir frutas frescas a tus desayunos?",
-        "Las grasas saludables como el aguacate son excelentes para ti.",
-        "Recuerda que la hidratación es tan importante como la alimentación.",
-        "¿Cuál es tu objetivo nutricional principal?",
-        "Los vegetales de hoja verde son muy nutritivos y bajos en calorías."
-    )
-    return responses.random()
+private suspend fun getChatGPTResponse(prompt: String): String = withContext(Dispatchers.IO) {
+    val client = OkHttpClient()
+    val url = "http://3.218.97.71:8080/chatgpt/generate"
+
+    val json = JSONObject().apply {
+        put("prompt", prompt)
+    }
+
+    val body = json.toString().toRequestBody("application/json".toMediaType())
+
+    val request = Request.Builder()
+        .url(url)
+        .post(body)
+        .build()
+
+    client.newCall(request).execute().use { response ->
+        if (!response.isSuccessful) throw IOException("Error: ${response.code}")
+
+        val responseBody = response.body?.string() ?: throw IOException("Respuesta vacía")
+        val jsonResponse = JSONObject(responseBody)
+
+        // Extraer el content del primer choice
+        val choices = jsonResponse.getJSONArray("choices")
+        val firstChoice = choices.getJSONObject(0)
+        val message = firstChoice.getJSONObject("message")
+
+        return@withContext message.getString("content")
+    }
 }
 
 @Preview(showBackground = true)
