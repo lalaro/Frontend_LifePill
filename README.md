@@ -95,7 +95,7 @@ com.escuelaing.edu.lifepill/
 
 1. Clona el repositorio:
 ```bash
-git clone https://github.com/tuusuario/lifepill.git
+git clone https://github.com/lalaro/lifepill.git
 ```
 
 2. Abre el proyecto en Android Studio
